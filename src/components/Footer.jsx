@@ -17,9 +17,9 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-surface-container-lowest relative border-t border-primary/10 overflow-hidden">
+    <footer className="bg-uoft/20 relative border-t border-accent/10 overflow-hidden">
       {/* Subtle glowing lines */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
       <div className="px-gutter py-16 max-w-container-max mx-auto relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-10">
@@ -28,14 +28,14 @@ export default function Footer() {
             <a
               href="#"
               onClick={handleScrollToTop}
-              className="font-display text-3xl font-black tracking-tight text-white uppercase"
+              className="font-display text-3xl font-black tracking-tight text-ink uppercase"
             >
               BOTS{" "}
-              <span className="text-secondary-fixed font-light text-2xl">
+              <span className="text-waterloo font-light text-2xl">
                 2026
               </span>
             </a>
-            <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed font-light">
+            <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed font-light">
               The premier inter-collegiate battlefield for artificial
               intelligence and machine learning. Co-hosted by North America's
               top AI clubs.
@@ -47,7 +47,7 @@ export default function Footer() {
                 href="https://ca.linkedin.com/company/wat-ai"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center text-primary hover:bg-amber-600 hover:text-white transition-all duration-300"
+                className="w-10 h-10 rounded-full border border-accent/20 bg-accent/5 flex items-center justify-center text-accent hover:bg-amber-600 hover:text-ink transition-all duration-300"
                 aria-label="Wat AI LinkedIn"
               >
                 <LinkedInIcon className="h-4 w-4" />
@@ -56,7 +56,7 @@ export default function Footer() {
                 href="https://ca.linkedin.com/company/utmist"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center text-primary hover:bg-[#002B5C] hover:text-white transition-all duration-300"
+                className="w-10 h-10 rounded-full border border-accent/20 bg-accent/5 flex items-center justify-center text-accent hover:bg-[#002B5C] hover:text-ink transition-all duration-300"
                 aria-label="UTMIST LinkedIn"
               >
                 <LinkedInIcon className="h-4 w-4" />
@@ -64,7 +64,7 @@ export default function Footer() {
 
               <a
                 href="mailto:r342shar@uwaterloo.ca"
-                className="w-10 h-10 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center text-primary hover:bg-primary hover:text-background transition-all duration-300"
+                className="w-10 h-10 rounded-full border border-accent/20 bg-accent/5 flex items-center justify-center text-accent hover:bg-accent hover:text-accent-ink transition-all duration-300"
                 aria-label="Email Contact"
               >
                 <FiMail size={16} />
@@ -77,31 +77,31 @@ export default function Footer() {
             <nav className="flex gap-8 font-sans text-xs uppercase tracking-widest">
               <a
                 href="#about"
-                className="text-on-surface-variant hover:text-primary transition-colors"
+                className="text-muted hover:text-accent transition-colors"
               >
                 About
               </a>
-              {/* <a href="#missions" className="text-on-surface-variant hover:text-primary transition-colors">Missions</a> */}
+              {/* <a href="#missions" className="text-muted hover:text-accent transition-colors">Missions</a> */}
               <a
                 href="#organizations"
-                className="text-on-surface-variant hover:text-primary transition-colors"
+                className="text-muted hover:text-accent transition-colors"
               >
                 Organizers
               </a>
               <a
                 href="#faq"
-                className="text-on-surface-variant hover:text-primary transition-colors"
+                className="text-muted hover:text-accent transition-colors"
               >
                 FAQ
               </a>
             </nav>
 
             <div className="space-y-1.5 text-center md:text-right">
-              <div className="text-on-surface-variant text-xs font-mono tracking-wider flex items-center justify-center md:justify-end gap-1.5">
-                <FiTerminal size={12} className="text-primary-fixed-dim" />
+              <div className="text-muted text-xs font-mono tracking-wider flex items-center justify-center md:justify-end gap-1.5">
+                <FiTerminal size={12} className="text-accent" />
                 HOSTED BY UTMIST X WAT.AI
               </div>
-              <div className="text-outline text-[10px] font-sans">
+              <div className="text-muted text-[10px] font-sans">
                 &copy; {currentYear} BATTLE OF THE SCHOOLS. ALL RIGHTS RESERVED.
               </div>
             </div>

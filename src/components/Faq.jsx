@@ -39,35 +39,29 @@ export default function Faq() {
   );
 
   return (
-    <section className="py-24 relative overflow-hidden bg-surface-container-lowest/40" id="faq">
-      {/* Decorative cyber grid */}
-      <div className="absolute inset-0 network-pattern opacity-[0.03]" />
-
+    <section className="py-24 relative overflow-hidden bg-uoft/20" id="faq">
       <div className="mx-auto max-w-3xl px-gutter relative z-10">
-        
+
         <div className="text-center mb-16 space-y-4">
-          <div className="inline-block px-3 py-1 rounded-md border border-primary/10 bg-primary/5 text-primary text-xs font-mono uppercase tracking-widest font-bold">
-            04 // FAQ
-          </div>
-          <h2 className="font-display text-3xl sm:text-5xl font-black uppercase text-white leading-tight">
-            Frequently Asked <span className="text-primary italic">Questions</span>
+          <h2 className="font-display text-3xl sm:text-5xl font-black uppercase text-ink leading-tight">
+            Frequently Asked <span className="text-accent italic">Questions</span>
           </h2>
-          <p className="font-sans text-on-surface-variant leading-relaxed">
+          <p className="font-sans text-muted leading-relaxed">
             Have questions? We've got answers. Review our frequently asked questions below.
           </p>
         </div>
 
         {/* Real-time Interactive Filter Search bar */}
         <div className="relative mb-8 max-w-md mx-auto">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-primary/55">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-accent/55">
             <Search size={18} />
           </div>
-          <input 
+          <input
             type="text"
             placeholder="SEARCH FAQ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-primary/10 bg-surface-container-lowest/90 font-mono text-xs text-white uppercase placeholder-outline tracking-wider focus:outline-none focus:border-primary/50 focus:shadow-[0_0_20px_rgba(46,91,255,0.15)] transition-all duration-300"
+            className="w-full pl-12 pr-4 py-4 rounded-xl border border-signal/15 bg-uoft/20 font-mono text-xs text-ink uppercase placeholder-muted tracking-wider focus:outline-none focus:border-accent/50 transition-all duration-300"
           />
         </div>
 
@@ -77,10 +71,10 @@ export default function Faq() {
             filteredFaqs.map((faq, i) => {
               const isOpen = expandedIndex === i;
               return (
-                <div 
-                  key={i} 
-                  className={`glass-panel rounded-2xl border transition-all duration-300 overflow-hidden ${
-                    isOpen ? 'border-primary/30 bg-surface-container-low/40' : 'border-white/5 bg-surface-container-lowest/80'
+                <div
+                  key={i}
+                  className={`rounded-lg border transition-all duration-300 overflow-hidden ${
+                    isOpen ? 'border-accent/60 bg-uoft/20' : 'border-signal/15 bg-uoft/20'
                   }`}
                 >
                   <button
@@ -88,20 +82,20 @@ export default function Faq() {
                     className="w-full p-6 text-left flex justify-between items-center group transition-colors duration-200"
                   >
                     <span className={`font-display text-sm sm:text-base font-bold transition-colors ${
-                      isOpen ? 'text-primary' : 'text-white group-hover:text-primary-fixed-dim'
+                      isOpen ? 'text-accent' : 'text-ink group-hover:text-accent'
                     }`}>
                       {faq.q}
                     </span>
-                    <span className={`text-primary transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                    <span className={`text-accent transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
                       <ChevronDown size={20} />
                     </span>
                   </button>
-                  
+
                   {/* Smooth height transition panel */}
                   <div className={`transition-all duration-300 ease-in-out ${
                     isOpen ? 'max-h-[300px] border-t border-white/5 opacity-100 p-6' : 'max-h-0 opacity-0'
                   }`}>
-                    <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed font-light">
+                    <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed font-light">
                       {faq.a}
                     </p>
                   </div>
@@ -109,14 +103,14 @@ export default function Faq() {
               );
             })
           ) : (
-            <div className="glass-panel p-8 text-center rounded-2xl border border-rose-500/10 bg-rose-950/5 flex flex-col items-center gap-3">
+            <div className="p-8 text-center rounded-lg border border-rose-500/10 bg-rose-950/5 flex flex-col items-center gap-3">
               <Info className="text-rose-400" size={24} />
               <p className="font-mono text-xs uppercase tracking-widest text-rose-300">
                 NO QUESTIONS MATCH YOUR SEARCH
               </p>
-              <button 
+              <button
                 onClick={() => setSearchTerm('')}
-                className="font-mono text-[10px] text-primary uppercase underline hover:text-white"
+                className="font-mono text-[10px] text-accent uppercase underline hover:text-ink"
               >
                 Clear Search Filter
               </button>
