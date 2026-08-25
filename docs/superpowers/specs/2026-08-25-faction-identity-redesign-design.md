@@ -235,6 +235,12 @@ Two rival CS schools and a public counter will be scripted against, quickly. Cli
 Treated as acceptance criteria, not polish:
 
 - Every text/background pair meets WCAG AA (4.5:1); the palette in §4 is already verified.
+- **Interactive component boundaries meet WCAG 1.4.11 non-text contrast (3:1)** against
+  whatever they sit on. This was added after Task 8's review measured the faction cards'
+  rest-state borders at 2.2:1 (UTMIST) and 2.97:1 (WAT.ai) against the void — below the
+  threshold, meaning a low-vision visitor may not perceive the hero's primary controls as
+  controls until they hover. Contrast must be measured against the **effective** surface,
+  i.e. after alpha blending, not against the raw token.
 - `prefers-reduced-motion: reduce` disables the crawl animation, starfield parallax, and cursor glow. Every one has a static fallback.
 - The cursor glow never replaces the native cursor and is absent on touch.
 - The faction choice is reachable and operable by keyboard, with visible focus states.
