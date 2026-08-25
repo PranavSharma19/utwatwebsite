@@ -3,6 +3,7 @@ import { BookOpen, GraduationCap, Compass, Users, Network, TrendingUp } from 'lu
 import wataiLogoImg from '../assets/wat-ai-logo.avif';
 import utmistLogoImg from '../assets/utmist-logo.png';
 import utmistLogoWithTextImg from '../assets/utmist-logo-with-text.png';
+import TugOfWar from '../cheer/TugOfWar';
 
 export default function OrgSpotlight() {
   const [activeOrg, setActiveOrg] = useState('utmist'); // 'utmist' or 'watai'
@@ -200,6 +201,11 @@ export default function OrgSpotlight() {
 
           </div>
 
+        </div>
+
+        {/* Tug-of-war: territory, not a scoreboard */}
+        <div className="mt-16">
+          <TugOfWar />
         </div>
 
       </div>

@@ -1,5 +1,13 @@
+import { useRef, useState } from 'react'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { useFaction } from './FactionContext'
 import { FACTIONS, factionLabel, factionSchool } from '../theme/tokens'
+import { submitCheer } from '../cheer/cheerClient'
+
+// .trim() strips stray whitespace / BOM that env tooling can prepend, which
+// would otherwise make Cloudflare reject the sitekey as malformed. (Same
+// bug, same fix, as src/admissions/AuthPanel.jsx.)
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim()
 
 /**
  * The polarised moment: two territories, one choice.
@@ -32,37 +40,72 @@ const SIDE = {
 
 export default function FactionChoice({ onCheer }) {
   const { faction, choose } = useFaction()
+  const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
+
+  // The widget only runs when a site key is configured, so local dev and the
+  // test environment (where VITE_TURNSTILE_SITE_KEY is unset) keep the
+  // faction choice and site-wide theming fully working — only the cheer
+  // submission (which the Edge Function requires a token for) is skipped.
+  const captchaEnabled = Boolean(TURNSTILE_SITE_KEY)
+
+  const resetCaptcha = () => {
+    setCaptchaToken('')
+    turnstileRef.current?.reset()
+  }
 
   const pick = (side) => {
     choose(side)
     onCheer?.(side)
+    if (captchaEnabled && captchaToken) {
+      submitCheer({ faction: side, turnstileToken: captchaToken })
+      // Turnstile tokens are single-use; reset after every attempt so a
+      // visitor who switches sides doesn't submit a spent token.
+      resetCaptcha()
+    }
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-      {FACTIONS.map((side) => (
-        <button
-          key={side}
-          type="button"
-          aria-pressed={faction === side}
-          onClick={() => pick(side)}
-          className={`group rounded-lg border p-6 text-left transition-colors duration-300 ${SIDE[side].surface} ${
-            faction === side ? 'ring-1 ring-accent' : ''
-          }`}
-        >
-          <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
-            {factionSchool[side]}
-          </span>
-          <span className={`mt-2 block font-display text-2xl font-bold uppercase ${SIDE[side].ink}`}>
-            {factionLabel[side]}
-          </span>
-          <span
-            className={`mt-3 block font-mono text-[10px] uppercase tracking-[.2em] text-muted ${SIDE[side].hover}`}
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+        {FACTIONS.map((side) => (
+          <button
+            key={side}
+            type="button"
+            aria-pressed={faction === side}
+            onClick={() => pick(side)}
+            className={`group rounded-lg border p-6 text-left transition-colors duration-300 ${SIDE[side].surface} ${
+              faction === side ? 'ring-1 ring-accent' : ''
+            }`}
           >
-            {faction === side ? 'Standing with them' : 'Cheer them on →'}
-          </span>
-        </button>
-      ))}
-    </div>
+            <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
+              {factionSchool[side]}
+            </span>
+            <span className={`mt-2 block font-display text-2xl font-bold uppercase ${SIDE[side].ink}`}>
+              {factionLabel[side]}
+            </span>
+            <span
+              className={`mt-3 block font-mono text-[10px] uppercase tracking-[.2em] text-muted ${SIDE[side].hover}`}
+            >
+              {faction === side ? 'Standing with them' : 'Cheer them on →'}
+            </span>
+          </button>
+        ))}
+      </div>
+      {captchaEnabled && (
+        // interaction-only keeps this invisible unless Cloudflare actually
+        // decides a challenge is needed — a visible CAPTCHA in front of a
+        // "cheer for your school" button would suppress the very
+        // participation this feature exists to create.
+        <Turnstile
+          ref={turnstileRef}
+          siteKey={TURNSTILE_SITE_KEY}
+          onSuccess={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken('')}
+          onError={() => setCaptchaToken('')}
+          options={{ appearance: 'interaction-only', theme: 'dark' }}
+        />
+      )}
+    </>
   )
 }
