@@ -3,6 +3,8 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { useFaction } from './FactionContext'
 import { FACTIONS, factionLabel, factionSchool } from '../theme/tokens'
 import { submitCheer } from '../cheer/cheerClient'
+import TugOfWar from '../cheer/TugOfWar'
+import handImg from '../assets/hand.png'
 
 // .trim() strips stray whitespace / BOM that env tooling can prepend, which
 // would otherwise make Cloudflare reject the sitekey as malformed. (Same
@@ -27,16 +29,25 @@ const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim()
 //   border-waterloo/60  -> #9C8537   5.41:1  PASSES
 const SIDE = {
   utmist: {
-    surface: 'bg-uoft/40 hover:bg-uoft/60 border-signal/60',
+    // Gradient rgba(uoft) .75 -> .35 over the void. Measured against those
+    // surfaces: signal 5.68:1 / 7.06:1, muted 8.49:1 / 10.55:1 — all AA.
+    surface: 'bg-gradient-to-b from-uoft/75 to-uoft/35',
+    border: 'border-signal/60',   // #57698B, 3.53:1 vs void — WCAG 1.4.11
     ink: 'text-signal',
-    hover: 'group-hover:text-signal',
+    glow: 'sm:shadow-[0_0_40px_-8px_rgba(139,167,218,0.55)]',
+    align: 'sm:text-left sm:items-start',
   },
   watai: {
-    surface: 'bg-waterloo/10 hover:bg-waterloo/20 border-waterloo/60',
+    // Gradient rgba(waterloo) .16 -> .05 over the void. waterloo 9.82:1 /
+    // 12.75:1, muted 8.56:1 / 11.11:1 — all AA.
+    surface: 'bg-gradient-to-b from-waterloo/[0.16] to-waterloo/[0.05]',
+    border: 'border-waterloo/60', // #9C8537, 5.41:1 vs void — WCAG 1.4.11
     ink: 'text-waterloo',
-    hover: 'group-hover:text-waterloo',
+    glow: 'sm:shadow-[0_0_40px_-8px_rgba(253,213,79,0.5)]',
+    align: 'sm:text-right sm:items-end',
   },
 }
+
 
 export default function FactionChoice({ onCheer }) {
   const { faction, choose } = useFaction()
@@ -84,31 +95,78 @@ export default function FactionChoice({ onCheer }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-        {FACTIONS.map((side) => (
-          <button
-            key={side}
-            type="button"
-            aria-pressed={faction === side}
-            onClick={() => pick(side)}
-            className={`group rounded-lg border p-6 text-left transition-colors duration-300 ${SIDE[side].surface} ${
-              faction === side ? 'ring-1 ring-accent' : ''
-            }`}
-          >
-            <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
-              {factionSchool[side]}
-            </span>
-            <span className={`mt-2 block font-display text-2xl font-bold uppercase ${SIDE[side].ink}`}>
-              {factionLabel[side]}
-            </span>
-            <span
-              className={`mt-3 block font-mono text-[10px] uppercase tracking-[.2em] text-muted ${SIDE[side].hover}`}
-            >
-              {faction === side ? 'Standing with them' : 'Cheer them on →'}
-            </span>
-          </button>
-        ))}
+      {/* The arena. Two territories meeting at a lit seam, with the hand
+          holding the line between them.
+
+          The seam is a flex ITEM between the two panels, not an absolutely
+          positioned overlay — so it stays exactly on the boundary when the
+          chosen side expands, and it flips from a vertical divider to a
+          horizontal one for free when the panels stack on mobile.
+
+          The hand lives in the seam on purpose: that is neutral ground. It
+          belongs to neither side, never takes --accent, and is not a
+          descendant of either button, so it cannot intercept a click. */}
+      <div
+        className={`mx-auto flex max-w-4xl flex-col overflow-hidden rounded-xl border sm:flex-row ${
+          faction ? 'border-accent/40' : 'border-signal/25'
+        }`}
+      >
+        {(() => {
+          const panels = FACTIONS.map((side) => {
+            const chosen = faction === side
+            const other = faction !== null && !chosen
+            return (
+              <button
+                key={side}
+                type="button"
+                aria-pressed={chosen}
+                onClick={() => pick(side)}
+                className={`group flex flex-1 flex-col justify-between gap-6 border-0 p-6 text-left transition-all duration-500 sm:p-8
+                  ${SIDE[side].surface} ${SIDE[side].align}
+                  ${chosen ? `sm:flex-[1.35] ${SIDE[side].glow}` : ''}
+                  ${other ? 'opacity-55 hover:opacity-80' : 'hover:brightness-125'}`}
+              >
+                <span className="block">
+                  <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
+                    {factionSchool[side]}
+                  </span>
+                  <span
+                    className={`mt-2 block font-display text-3xl font-bold uppercase leading-none sm:text-4xl ${SIDE[side].ink}`}
+                  >
+                    {factionLabel[side]}
+                  </span>
+                </span>
+                <span
+                  className={`block font-mono text-[10px] uppercase tracking-[.2em] ${
+                    chosen ? SIDE[side].ink : 'text-muted'
+                  }`}
+                >
+                  {chosen ? '\u2713 Holding the line' : 'Cheer them on \u2192'}
+                </span>
+              </button>
+            )
+          })
+          return (
+            <>
+              {panels[0]}
+              <div className="faction-seam" aria-hidden="true">
+                <img
+                  src={handImg}
+                  alt=""
+                  className="faction-seam-hand pointer-events-none select-none"
+                />
+              </div>
+              {panels[1]}
+            </>
+          )
+        })()}
       </div>
+
+      {/* The consequence, in the same eyeful as the cause. */}
+      <div className="mx-auto mt-5 max-w-4xl">
+        <TugOfWar />
+      </div>
+
       {captchaEnabled && (
         // interaction-only keeps this invisible unless Cloudflare actually
         // decides a challenge is needed — a visible CAPTCHA in front of a

@@ -16,8 +16,15 @@ import { forwardRef, useImperativeHandle } from 'react'
 
 const turnstileReset = vi.fn()
 
+// FactionChoice now renders TugOfWar beneath the arena, so the mock has to
+// cover everything that subtree imports too, not just submitCheer.
 vi.mock('../cheer/cheerClient', () => ({
   submitCheer: vi.fn().mockResolvedValue({ utmist: 0, watai: 0 }),
+  // Plain functions, not vi.fn(): this file calls vi.resetAllMocks(), which
+  // strips a spy's implementation and would leave fetchTally() returning
+  // undefined. Nothing here asserts on the bar, so it just needs to behave.
+  fetchTally: () => Promise.resolve({ utmist: 0, watai: 0 }),
+  subscribeTally: () => () => {},
 }))
 
 vi.mock('@marsidev/react-turnstile', () => ({

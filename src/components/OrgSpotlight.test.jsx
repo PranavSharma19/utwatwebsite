@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FactionProvider, useFaction } from '../faction/FactionContext'
@@ -7,7 +7,6 @@ import OrgSpotlight from './OrgSpotlight'
 
 // The tug-of-war bar is a child of this section but is its own component with
 // its own tests; stubbing it keeps an unrelated async fetch out of these.
-vi.mock('../cheer/TugOfWar', () => ({ default: () => null }))
 
 function ChooseWatai() {
   const { choose } = useFaction()

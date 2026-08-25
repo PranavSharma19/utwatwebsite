@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { FactionProvider } from '../faction/FactionContext'
 import Hero from './Hero'
 
+// Hero renders FactionChoice, which now renders TugOfWar. That fetches a
+// tally on mount and updates state, which is act() noise in tests about the
+// hero's own composition. The bar has its own suite.
+vi.mock('../cheer/TugOfWar', () => ({ default: () => null }))
+
+
 // Byte-exact, approved crawl copy — see task-10a-brief.md. Do not reword,
 // re-punctuate, or "improve" this string. The dash is an em dash (U+2014).
 const CRAWL_COPY =

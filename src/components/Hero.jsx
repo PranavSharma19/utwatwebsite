@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Crawl from './Crawl'
 import FactionChoice from '../faction/FactionChoice'
-import hand from '../assets/hand.png'
 
 /**
  * The Hero: three beats over the globally-mounted Starfield.
@@ -49,20 +48,6 @@ export default function Hero() {
             <div className="mt-10 w-full">
               <FactionChoice />
             </div>
-
-            {/*
-              The hand: faction-neutral by construction. It is a sibling of
-              the faction grid, not a descendant of either card, carries no
-              --accent/text-accent/bg-accent class, and is purely decorative
-              (alt="", pointer-events-none) so it can never intercept clicks
-              on the buttons above it.
-            */}
-            <img
-              src={hand}
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none relative mt-8 w-40 select-none opacity-80 sm:mt-10 sm:w-56"
-            />
           </div>
         )}
       </div>

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { ChevronDown, Search, Info } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 export default function Faq() {
-  const [searchTerm, setSearchTerm] = useState('');
   const [expandedIndex, setExpandedIndex] = useState(null);
 
   const faqData = [
@@ -32,12 +31,6 @@ export default function Faq() {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  const filteredFaqs = faqData.filter(
-    (faq) => 
-      faq.q.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      faq.a.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <section className="py-24 relative overflow-hidden bg-uoft/20" id="faq">
       <div className="mx-auto max-w-3xl px-gutter relative z-10">
@@ -51,37 +44,9 @@ export default function Faq() {
           </p>
         </div>
 
-        {/* Real-time Interactive Filter Search bar */}
-        <div className="relative mb-8 max-w-md mx-auto">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-accent/55">
-            <Search size={18} />
-          </div>
-          {/*
-            aria-label, because the placeholder is not an accessible name:
-            it disappears the moment anything is typed, leaving the control
-            unnamed (WCAG 1.3.1 / 4.1.2), and there is no visible label to
-            point at.
-
-            border-signal/60, not /15: this input's bg-uoft/20 sits inside a
-            section that is itself bg-uoft/20, so the fill alone is 1.20:1
-            against its surroundings and cannot delimit the control at all.
-            The border is the only boundary it has, and WCAG 1.4.11 asks 3:1
-            of it. See CONTRAST_MEASUREMENTS in src/theme/tokens.test.js.
-          */}
-          <input
-            type="text"
-            aria-label="Search FAQ"
-            placeholder="SEARCH FAQ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-signal/60 bg-uoft/20 font-mono text-xs text-ink uppercase placeholder-muted tracking-wider focus:outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/70 transition-all duration-300"
-          />
-        </div>
-
         {/* Accordions Container */}
         <div className="space-y-4">
-          {filteredFaqs.length > 0 ? (
-            filteredFaqs.map((faq, i) => {
+          {faqData.map((faq, i) => {
               const isOpen = expandedIndex === i;
               return (
                 <div
@@ -114,21 +79,7 @@ export default function Faq() {
                   </div>
                 </div>
               );
-            })
-          ) : (
-            <div className="p-8 text-center rounded-lg border border-rose-500/10 bg-rose-950/5 flex flex-col items-center gap-3">
-              <Info className="text-rose-400" size={24} />
-              <p className="font-mono text-xs uppercase tracking-widest text-rose-300">
-                NO QUESTIONS MATCH YOUR SEARCH
-              </p>
-              <button
-                onClick={() => setSearchTerm('')}
-                className="font-mono text-[10px] text-accent uppercase underline hover:text-ink"
-              >
-                Clear Search Filter
-              </button>
-            </div>
-          )}
+          })}
         </div>
 
       </div>
