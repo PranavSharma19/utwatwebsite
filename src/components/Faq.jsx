@@ -61,7 +61,7 @@ export default function Faq() {
             placeholder="SEARCH FAQ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-signal/15 bg-uoft/20 font-mono text-xs text-ink uppercase placeholder-muted tracking-wider focus:outline-none focus:border-accent/50 transition-all duration-300"
+            className="w-full pl-12 pr-4 py-4 rounded-xl border border-signal/15 bg-uoft/20 font-mono text-xs text-ink uppercase placeholder-muted tracking-wider focus:outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/70 transition-all duration-300"
           />
         </div>
 
