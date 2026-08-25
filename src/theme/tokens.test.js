@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { contrastRatio, meetsAA } from './contrast'
-import { palette, FACTIONS, factionAccent, NEUTRAL_ACCENT } from './tokens'
+import { palette, FACTIONS, factionAccent, NEUTRAL_ACCENT, factionLabel, factionSchool } from './tokens'
 
 describe('contrast maths', () => {
   it('gives 21:1 for black on white', () => {
@@ -47,5 +47,33 @@ describe('uoft blue is ground-only', () => {
 
   it('is never used as a faction accent', () => {
     expect(Object.values(factionAccent)).not.toContain(palette.uoft)
+  })
+})
+
+describe('faction metadata', () => {
+  it.each(FACTIONS)('has a label for %s', (faction) => {
+    expect(factionLabel[faction]).toBeDefined()
+    expect(typeof factionLabel[faction]).toBe('string')
+    expect(factionLabel[faction].length).toBeGreaterThan(0)
+  })
+
+  it.each(FACTIONS)('has a school name for %s', (faction) => {
+    expect(factionSchool[faction]).toBeDefined()
+    expect(typeof factionSchool[faction]).toBe('string')
+    expect(factionSchool[faction].length).toBeGreaterThan(0)
+  })
+
+  it('has correct label values', () => {
+    expect(factionLabel).toEqual({
+      utmist: 'UTMIST',
+      watai: 'WAT.ai',
+    })
+  })
+
+  it('has correct school names', () => {
+    expect(factionSchool).toEqual({
+      utmist: 'University of Toronto',
+      watai: 'University of Waterloo',
+    })
   })
 })
