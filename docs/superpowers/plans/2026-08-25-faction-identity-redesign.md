@@ -1123,8 +1123,13 @@ import { useEffect, useRef, useState } from 'react'
  * not to see. A skip control is always available.
  */
 export default function Crawl({ text, onDone }) {
-  const [animated, setAnimated] = useState(false)
   const doneRef = useRef(false)
+
+  // Lazy initialiser, not setState inside an effect: this repo's
+  // eslint-plugin-react-hooks 7.x sets react-hooks/set-state-in-effect to error.
+  const [animated] = useState(
+    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
 
   const finish = () => {
     if (doneRef.current) return
@@ -1133,9 +1138,9 @@ export default function Crawl({ text, onDone }) {
   }
 
   useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce) finish()
-    else setAnimated(true)
+    // Nothing to wait for when motion is reduced, so release the caller at once
+    // rather than holding it behind an animation it opted out of.
+    if (!animated) finish()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1465,13 +1470,14 @@ import { useEffect, useRef, useState } from 'react'
  */
 export default function CursorGlow() {
   const ref = useRef(null)
-  const [enabled, setEnabled] = useState(false)
 
-  useEffect(() => {
+  // Lazy initialiser, not setState inside an effect: this repo's
+  // eslint-plugin-react-hooks 7.x sets react-hooks/set-state-in-effect to error.
+  const [enabled] = useState(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const coarse = window.matchMedia('(pointer: coarse)').matches
-    setEnabled(!reduce && !coarse)
-  }, [])
+    return !reduce && !coarse
+  })
 
   useEffect(() => {
     if (!enabled) return
