@@ -1,25 +1,7 @@
 import { Mail, Globe, Sparkles } from "lucide-react";
-import steelLogo from "../assets/steel-logo.svg";
-import shopifyLogo from "../assets/shopify-logo.svg";
+import { sponsors } from "../data/sponsors";
 
 export default function Sponsors() {
-  const premierSponsors = [
-    {
-      name: "Shopify",
-      logoUrl: shopifyLogo,
-      web: "https://shopify.com",
-      borderGlow:
-        "hover:border-green-500/40 hover:shadow-[0_0_30px_rgba(34,197,94,0.15)]",
-    },
-    {
-      name: "Steel",
-      logoUrl: steelLogo,
-      web: "https://steel.dev",
-      borderGlow:
-        "hover:border-yellow-400/50 hover:shadow-[0_0_30px_rgba(245,217,10,0.18)]",
-    },
-  ];
-
   return (
     <section className="py-24 relative overflow-hidden" id="sponsors">
       {/* Dynamic ambient graphic */}
@@ -41,38 +23,37 @@ export default function Sponsors() {
 
         {/* Sponsor Banner Box */}
         <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-primary/10 bg-surface-container-lowest/80 backdrop-blur-2xl">
-          <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
-            {premierSponsors.map((sponsor) => (
-              <a
+          {/* Flat wall - every sponsor gets the same footprint. `justify-center`
+              centers the final short row rather than leaving a hole in a grid. */}
+          <ul className="flex flex-wrap justify-center gap-4 sm:gap-6 list-none p-0 m-0">
+            {sponsors.map((sponsor) => (
+              <li
                 key={sponsor.name}
-                href={sponsor.web}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`relative bg-white/95 p-8 rounded-2xl flex items-center justify-center w-full max-w-[320px] h-36 shadow-xl hover:scale-105 transition-all duration-300 ${sponsor.borderGlow}`}
+                className="basis-[calc(50%-0.5rem)] sm:basis-[calc(33.333%-1rem)] max-w-[300px]"
               >
-                <img
-                  alt={`${sponsor.name} Logo`}
-                  className="max-h-16 max-w-full object-contain pointer-events-none"
-                  src={sponsor.logoUrl}
-                />
+                <a
+                  href={sponsor.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${sponsor.name} - visit website`}
+                  className="group relative bg-white/95 p-6 sm:p-8 rounded-2xl flex items-center justify-center h-32 sm:h-36 shadow-xl transition-all duration-300 hover:scale-105 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(184,195,255,0.18)] border border-transparent"
+                >
+                  <img
+                    alt={`${sponsor.name} logo`}
+                    src={sponsor.logo}
+                    loading="lazy"
+                    className="w-auto max-w-full object-contain pointer-events-none"
+                    style={{ maxHeight: `${3.25 * (sponsor.logoScale ?? 1)}rem` }}
+                  />
 
-                {/* Micro interactive indicator */}
-                <span className="absolute bottom-3 right-3 flex items-center gap-1 text-[8px] font-mono text-gray-400 uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity">
-                  <Globe size={8} /> Visit Site
-                </span>
-              </a>
+                  {/* Micro interactive indicator */}
+                  <span className="absolute bottom-3 right-3 flex items-center gap-1 text-[8px] font-mono text-gray-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Globe size={8} /> Visit Site
+                  </span>
+                </a>
+              </li>
             ))}
-
-            {/* More sponsors to come */}
-            <div className="relative flex flex-col items-center justify-center gap-2 w-full max-w-[320px] h-36 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.03] text-center">
-              <span className="font-display text-2xl font-black uppercase tracking-wider text-primary-fixed-dim">
-                & More
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-on-surface-variant">
-                Coming Soon
-              </span>
-            </div>
-          </div>
+          </ul>
 
           <div className="mt-16 text-center space-y-4">
             <p className="font-mono text-xs text-on-surface-variant uppercase tracking-[0.25em] flex items-center justify-center gap-2">
