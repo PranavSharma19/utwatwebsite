@@ -16,9 +16,26 @@ body {
   overflow-x: hidden;
 }
 
-:root                   { --accent: #C3CBDD; --accent-ink: #0A0C14; }
-[data-faction="utmist"] { --accent: #8BA7DA; --accent-ink: #0A0C14; }
-[data-faction="watai"]  { --accent: #FDD54F; --accent-ink: #0A0C14; }
+/*
+ * The faction accent, as space-separated sRGB channels rather than a hex
+ * literal. Tailwind's opacity modifier (`bg-accent/5`, `border-accent/10`,
+ * `ring-accent/70`) can only be generated for a colour declared with the
+ * `<alpha-value>` placeholder, which needs the channels on their own — a
+ * bare `var(--accent)` makes every one of those utilities compile to
+ * nothing. See the `accent` entry in tailwind.config.js.
+ *
+ * `--accent` / `--accent-ink` stay available as ready-made colours for plain
+ * CSS (e.g. .cursor-glow below). :root and [data-faction] both match <html>,
+ * so the derived values resolve against whichever channels won the cascade.
+ */
+:root                   { --accent-rgb: 195 203 221; --accent-ink-rgb: 10 12 20; }
+[data-faction="utmist"] { --accent-rgb: 139 167 218; --accent-ink-rgb: 10 12 20; }
+[data-faction="watai"]  { --accent-rgb: 253 213 79;  --accent-ink-rgb: 10 12 20; }
+
+:root {
+  --accent: rgb(var(--accent-rgb));
+  --accent-ink: rgb(var(--accent-ink-rgb));
+}
 
 /* Modern keyframe animations */
 @keyframes float {
@@ -141,4 +158,30 @@ body {
   opacity: .10;
   mix-blend-mode: screen;
   will-change: transform;
+}
+
+/*
+ * Legacy — admissions portal only (`/apply`, `/apply/admin`).
+ *
+ * These are the two class-based styles that src/pages/Admissions*.jsx and
+ * src/admissions/** still depend on. They are out of scope for the Deep
+ * Field redesign but ship to real applicants, so they are kept verbatim
+ * rather than restyled. Do not use them in new code.
+ */
+.glass-panel {
+  background: rgba(17, 19, 28, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(184, 195, 255, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(184, 195, 255, 0.25);
+  box-shadow: 0 10px 30px -10px rgba(46, 91, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.network-pattern {
+  background-image: radial-gradient(rgba(46, 91, 255, 0.15) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
