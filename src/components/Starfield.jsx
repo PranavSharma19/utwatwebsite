@@ -10,9 +10,9 @@ import { useEffect, useRef } from 'react'
  * field remains, so nothing is lost but the movement.
  */
 const LAYERS = [
-  { depth: 0.02, size: '1.5px', count: 'a', opacity: 0.9 },
-  { depth: 0.05, size: '1px', count: 'b', opacity: 0.6 },
-  { depth: 0.09, size: '2px', count: 'c', opacity: 0.35 },
+  { depth: 0.02, count: 'a', opacity: 0.9 },
+  { depth: 0.05, count: 'b', opacity: 0.6 },
+  { depth: 0.09, count: 'c', opacity: 0.35 },
 ]
 
 export default function Starfield() {
