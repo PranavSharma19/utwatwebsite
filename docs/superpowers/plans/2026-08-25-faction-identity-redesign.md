@@ -192,7 +192,11 @@ The spec makes WCAG AA an acceptance criterion. This task makes it automated, so
   - `FACTIONS = ['utmist', 'watai']`
   - `factionAccent = { utmist: '#8BA7DA', watai: '#FDD54F' }`
   - `NEUTRAL_ACCENT = '#C3CBDD'`
-  - Tasks 3, 5, 8, 9, 12 all import from here.
+  - `factionLabel = { utmist: 'UTMIST', watai: 'WAT.ai' }`
+  - `factionSchool = { utmist: 'University of Toronto', watai: 'University of Waterloo' }`
+  - Tasks 3, 4, 8, 12, 13 all import from here. `factionLabel` and
+    `factionSchool` are consumed by Task 8 (`FactionChoice.jsx`) and
+    `factionLabel` again by Task 13 (`TugOfWar.jsx`).
 
 - [ ] **Step 1: Write the failing test**
 
