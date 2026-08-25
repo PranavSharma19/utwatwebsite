@@ -801,12 +801,11 @@ const FactionContext = createContext(null)
  * :root supplies a neutral accent that favours neither school.
  */
 export function FactionProvider({ children }) {
-  const [faction, setFaction] = useState(null)
-
-  useEffect(() => {
-    const stored = readFaction()
-    if (stored) setFaction(stored)
-  }, [])
+  // Lazy initialiser, not useState(null) + a mount effect: this repo's
+  // eslint-plugin-react-hooks 7.x sets `set-state-in-effect` to error, and
+  // reading the stored value up front also avoids a returning visitor seeing
+  // a frame of neutral theming before their side is reapplied.
+  const [faction, setFaction] = useState(() => readFaction())
 
   useEffect(() => {
     const root = document.documentElement
