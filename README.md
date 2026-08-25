@@ -39,10 +39,18 @@ Apply `supabase/migrations/202608250001_faction_cheers.sql`, then deploy the
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=...
 TURNSTILE_SECRET_KEY=...
+TURNSTILE_EXPECTED_HOSTNAME=<the production hostname the Turnstile widget runs on>
 CHEER_HASH_SALT=<any long random string>
 ALLOWED_ORIGIN=https://<production-domain>
 ```
 
+`ALLOWED_ORIGIN` and `TURNSTILE_EXPECTED_HOSTNAME` are not optional: the
+function fails closed and refuses writes (`GET` still works) if either is
+unset, rather than defaulting open.
+
 The `faction_cheers` table has RLS enabled with no policies — it is
 unreachable with the anon key by design. All access goes through the
-function under the service role.
+function under the service role, which also rate-limits and Turnstile-checks
+every write. The uniqueness guarantee is one cheer per IP address per UTC
+day, accumulating into an all-time tally — not one cheer per visitor forever;
+see the comment on `faction_cheers_visitor_uniq` in the migration for why.

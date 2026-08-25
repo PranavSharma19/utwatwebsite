@@ -12,16 +12,36 @@ function isFaction(value: unknown): value is Faction {
   return typeof value === 'string' && (FACTIONS as readonly string[]).includes(value)
 }
 
+// Fail closed, not open: with no configured origin, POST is refused (see the
+// method handler below) rather than left reachable from any page on the web.
+// GET stays permissive since it only ever returns an aggregate tally.
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN')
+
+// Sitekeys are public by construction (they ship in the page), so a token
+// that verifies with Cloudflare only proves it was solved for *some* site
+// using this sitekey — not this one. TURNSTILE_EXPECTED_HOSTNAME closes that
+// replay path; like ALLOWED_ORIGIN, an unset value fails closed rather than
+// silently accepting tokens solved on someone else's page.
+const TURNSTILE_EXPECTED_HOSTNAME = Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME')
+
 const CORS = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN ?? '*',
+  // Matches supabase/functions/admin-applications/index.ts so a client using
+  // supabase-js's `functions.invoke` (which sends apikey + x-client-info)
+  // doesn't fail preflight here.
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
-const json = (body: unknown, status = 200) =>
+const json = (
+  body: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {},
+) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...CORS, ...extraHeaders, 'Content-Type': 'application/json' },
   })
 
 const admin = createClient(
@@ -29,11 +49,94 @@ const admin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-async function hashVisitor(ip: string): Promise<string> {
-  // Salt rotates daily so the hash is not a durable identifier.
+// --- IP extraction -----------------------------------------------------
+//
+// `x-forwarded-for` is a client-appendable list: each proxy hop *appends* the
+// peer it received the request from, so the list reads
+// `<client-asserted>, <hop1>, <hop2>, ...`. The LEFTMOST entry is whatever the
+// client chose to send and is trivially forgeable (`X-Forwarded-For:
+// 203.0.113.<random>` on every request). The rightmost entry is the peer our
+// own edge/proxy layer observed directly, which the client cannot set.
+// `cf-connecting-ip`, where present, is written by Cloudflare's edge itself
+// and is stronger still, so it is preferred outright.
+function extractIp(req: Request): string {
+  const xff =
+    req.headers
+      .get('x-forwarded-for')
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? []
+  // `||`, not `??`: an XFF header that is present but empty parses to an
+  // empty array, so `xff[xff.length - 1]` is `undefined`, not `''` — but a
+  // stray empty *string* anywhere in this chain must still fall through
+  // rather than being treated as a truthy-but-blank identity.
+  return req.headers.get('cf-connecting-ip')?.trim() || xff[xff.length - 1] || 'unknown'
+}
+
+// Normalizes an IPv6 address down to its /64 network prefix so that a single
+// household (which typically gets a /64 or larger from its ISP) is one
+// voter, and so RFC 4941 privacy-extension address rotation within that
+// prefix doesn't mint new identities. IPv4 addresses (and the 'unknown'
+// fallback) pass through unchanged. This is a deliberately simple expander —
+// it does not handle embedded IPv4-mapped IPv6 literals (`::ffff:a.b.c.d`) —
+// which is an acceptable gap for a public vote counter.
+function normalizeIp(ip: string): string {
+  const trimmed = ip.trim()
+  if (!trimmed.includes(':')) return trimmed // IPv4, or 'unknown'
+
+  const withoutZone = trimmed.split('%')[0]
+  const halves = withoutZone.split('::')
+  let head: string[]
+  let tail: string[]
+  if (halves.length === 2) {
+    head = halves[0] ? halves[0].split(':') : []
+    tail = halves[1] ? halves[1].split(':') : []
+  } else {
+    head = withoutZone.split(':')
+    tail = []
+  }
+  const missing = Math.max(0, 8 - head.length - tail.length)
+  const groups = [...head, ...Array(missing).fill('0'), ...tail]
+  return groups
+    .slice(0, 4)
+    .map((g) => g.padStart(4, '0'))
+    .join(':')
+}
+
+// --- Per-IP rate limiting -----------------------------------------------
+//
+// In-memory sliding window keyed on the corrected+normalized IP. This is
+// per-isolate, not global, which is an accepted limitation for a public vote
+// counter; it still blunts single-origin bursts, and it must run on the
+// corrected IP or it limits nobody (a forgeable IP makes each "identity"
+// disposable).
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX_REQUESTS = 5
+const rateLimitHits = new Map<string, number[]>()
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
+  const now = Date.now()
+  const windowStart = now - RATE_LIMIT_WINDOW_MS
+  const hits = (rateLimitHits.get(ip) ?? []).filter((t) => t > windowStart)
+
+  if (hits.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitHits.set(ip, hits)
+    const retryAfterMs = hits[0] + RATE_LIMIT_WINDOW_MS - now
+    return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) }
+  }
+
+  hits.push(now)
+  rateLimitHits.set(ip, hits)
+  return { allowed: true, retryAfterSeconds: 0 }
+}
+
+async function hashVisitor(normalizedIp: string): Promise<string> {
+  // Salt rotates daily so the hash is not a durable identifier. Combined with
+  // the per-IP unique index, this means one cheer per IP per UTC day,
+  // accumulating into an all-time tally — not one cheer per visitor forever.
   const salt = Deno.env.get('CHEER_HASH_SALT') ?? ''
   const day = new Date().toISOString().slice(0, 10)
-  const data = new TextEncoder().encode(`${ip}|${day}|${salt}`)
+  const data = new TextEncoder().encode(`${normalizedIp}|${day}|${salt}`)
   const digest = await crypto.subtle.digest('SHA-256', data)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
@@ -49,20 +152,31 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
     'https://challenges.cloudflare.com/turnstile/v0/siteverify',
     { method: 'POST', body },
   )
+  if (!res.ok) return false
   const result = await res.json()
-  return result.success === true
+  if (result.success !== true) return false
+
+  // Fail closed: without a configured expected hostname we cannot rule out a
+  // token harvested on a page that merely embeds our public sitekey.
+  if (!TURNSTILE_EXPECTED_HOSTNAME) return false
+  return result.hostname === TURNSTILE_EXPECTED_HOSTNAME
 }
 
 async function tally(): Promise<Record<Faction, number>> {
+  const results = await Promise.all(
+    FACTIONS.map((faction) =>
+      admin
+        .from('faction_cheers')
+        .select('*', { count: 'exact', head: true })
+        .eq('faction', faction),
+    ),
+  )
+
   const counts = { utmist: 0, watai: 0 }
-  for (const faction of FACTIONS) {
-    const { count, error } = await admin
-      .from('faction_cheers')
-      .select('*', { count: 'exact', head: true })
-      .eq('faction', faction)
-    if (error) throw error
-    counts[faction] = count ?? 0
-  }
+  results.forEach((result, i) => {
+    if (result.error) throw result.error
+    counts[FACTIONS[i]] = result.count ?? 0
+  })
   return counts
 }
 
@@ -72,24 +186,39 @@ Deno.serve(async (req) => {
   // Identity comes ONLY from request headers plus the server-held salt, never
   // from the request body — anything the client sends in the body can be
   // forged and must never influence visitor_hash.
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    req.headers.get('cf-connecting-ip') ??
-    'unknown'
+  const ip = extractIp(req)
 
   try {
     if (req.method === 'GET') return json(await tally())
 
     if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
 
-    let payload: Record<string, unknown>
+    if (!ALLOWED_ORIGIN) {
+      return json({ error: 'cheer submission is not configured' }, 503)
+    }
+
+    const normalizedIp = normalizeIp(ip)
+
+    const rateLimit = checkRateLimit(normalizedIp)
+    if (!rateLimit.allowed) {
+      return json(
+        { error: 'too many requests' },
+        429,
+        { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+      )
+    }
+
+    let payload: unknown
     try {
       payload = await req.json()
     } catch {
       return json({ error: 'invalid body' }, 400)
     }
+    if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+      return json({ error: 'invalid body' }, 400)
+    }
 
-    const { faction, turnstileToken } = payload
+    const { faction, turnstileToken } = payload as Record<string, unknown>
 
     if (!isFaction(faction)) return json({ error: 'unknown faction' }, 400)
     if (typeof turnstileToken !== 'string' || !turnstileToken)
@@ -97,10 +226,10 @@ Deno.serve(async (req) => {
     if (!(await verifyTurnstile(turnstileToken, ip)))
       return json({ error: 'captcha failed' }, 403)
 
-    // visitor_hash is derived solely from `ip` (header-sourced, above) and the
-    // CHEER_HASH_SALT secret. `faction` and `turnstileToken` are the only
-    // client-supplied values used, and neither feeds the hash.
-    const visitor_hash = await hashVisitor(ip)
+    // visitor_hash is derived solely from `normalizedIp` (header-sourced,
+    // above) and the CHEER_HASH_SALT secret. `faction` and `turnstileToken`
+    // are the only client-supplied values used, and neither feeds the hash.
+    const visitor_hash = await hashVisitor(normalizedIp)
 
     // Unique index makes a repeat cheer a no-op rather than a double count.
     const { error } = await admin
