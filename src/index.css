@@ -55,3 +55,34 @@ body {
   background: #3e4052;
   border-color: rgba(184, 195, 255, 0.2);
 }
+
+/* The void — see src/components/Starfield.jsx */
+.starfield-nebula {
+  background:
+    radial-gradient(58% 74% at 14% 18%, rgba(30, 55, 101, .85) 0%, transparent 62%),
+    radial-gradient(52% 68% at 88% 82%, rgba(253, 213, 79, .13) 0%, transparent 64%);
+}
+.starfield-layer { background-repeat: repeat; }
+.starfield-a {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 130px 80px, #fff 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 75px 160px, #fff 50%, transparent 50%);
+  background-size: 200px 200px;
+}
+.starfield-b {
+  background-image:
+    radial-gradient(1px 1px at 45px 70px, #fff 50%, transparent 50%),
+    radial-gradient(1px 1px at 160px 20px, #fff 50%, transparent 50%),
+    radial-gradient(1px 1px at 100px 130px, #fff 50%, transparent 50%);
+  background-size: 180px 180px;
+}
+.starfield-c {
+  background-image:
+    radial-gradient(2px 2px at 90px 40px, #C3CBDD 50%, transparent 50%),
+    radial-gradient(2px 2px at 30px 150px, #C3CBDD 50%, transparent 50%);
+  background-size: 260px 260px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .starfield-layer { transform: none !important; }
+}

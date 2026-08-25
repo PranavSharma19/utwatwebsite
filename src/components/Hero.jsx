@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Calendar, MapPin, Terminal } from "lucide-react";
-import handImg from "../assets/hand.png";
 import wataiLogoImg from "../assets/wat-ai-logo.avif";
 import utmistLogoWithTextImg from "../assets/utmist-logo-with-text.png";
 
@@ -46,14 +45,6 @@ export default function Hero() {
           >
             {/* Layer 1: Box Background & Border */}
             <div className="absolute inset-0 rounded-[1.5rem] border border-primary/40 bg-surface-container-lowest/40 backdrop-blur-sm shadow-[0_0_40px_rgba(46,91,255,0.15)] z-0" />
-
-            {/* Layer 2: Hand Image */}
-            <img
-              src={handImg}
-              alt=""
-              className="absolute -bottom-56 sm:-bottom-72 left-1/2 -translate-x-1/2 w-[110%] max-w-[700px] pointer-events-none z-10"
-              style={{ objectFit: "contain" }}
-            />
 
             {/* Presenters Badge */}
             <div className="relative z-20 mt-8 sm:mt-10 flex items-center gap-3.5 select-none">

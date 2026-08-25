@@ -1,4 +1,5 @@
 import Navbar from '../components/Navbar';
+import Starfield from '../components/Starfield';
 import Hero from '../components/Hero';
 import About from '../components/About';
 import OrgSpotlight from '../components/OrgSpotlight';
@@ -11,10 +12,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-transparent text-on-surface font-sans selection:bg-primary/20 selection:text-primary">
       {/* Dynamic Cyber Grid Network background layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[#11131c]/60" />
-        <div className="absolute inset-0 network-pattern opacity-20" />
-      </div>
+      <Starfield />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Sticky Translucent Navigation */}
