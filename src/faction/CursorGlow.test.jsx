@@ -39,4 +39,43 @@ describe('CursorGlow', () => {
     expect(glow).toHaveAttribute('aria-hidden', 'true')
     expect(glow.className).toMatch(/pointer-events-none/)
   })
+
+  it('attaches a pointermove listener when enabled', () => {
+    mockMedia()
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+
+    render(<CursorGlow />)
+
+    expect(addEventListenerSpy).toHaveBeenCalledWith(
+      'pointermove',
+      expect.any(Function),
+      expect.anything()
+    )
+  })
+
+  it('never attaches a pointermove listener on touch devices', () => {
+    mockMedia({ coarse: true })
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+
+    render(<CursorGlow />)
+
+    expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+      'pointermove',
+      expect.any(Function),
+      expect.anything()
+    )
+  })
+
+  it('never attaches a pointermove listener under prefers-reduced-motion', () => {
+    mockMedia({ reduce: true })
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+
+    render(<CursorGlow />)
+
+    expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+      'pointermove',
+      expect.any(Function),
+      expect.anything()
+    )
+  })
 })
