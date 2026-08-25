@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
+// Matches the resting opacity .cursor-glow used to declare in src/index.css.
+const REVEALED_OPACITY = '0.1'
+
 /**
  * A soft glow in the current faction accent that follows the pointer.
  *
@@ -32,7 +35,12 @@ export default function CursorGlow() {
       frame = requestAnimationFrame(() => {
         frame = 0
         const node = ref.current
-        if (node) node.style.transform = `translate3d(${x}px, ${y}px, 0)`
+        if (!node) return
+        node.style.transform = `translate3d(${x}px, ${y}px, 0)`
+        // The element is fixed at the viewport origin until the first move,
+        // so .cursor-glow ships at opacity 0 and is revealed here — otherwise
+        // a 260px accent blob sits in the top-left corner of every page load.
+        node.style.opacity = REVEALED_OPACITY
       })
     }
 

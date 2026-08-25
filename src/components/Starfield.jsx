@@ -10,9 +10,9 @@ import { useEffect, useRef } from 'react'
  * field remains, so nothing is lost but the movement.
  */
 const LAYERS = [
-  { depth: 0.02, count: 'a', opacity: 0.9 },
-  { depth: 0.05, count: 'b', opacity: 0.6 },
-  { depth: 0.09, count: 'c', opacity: 0.35 },
+  { depth: 0.02, id: 'a', opacity: 0.9 },
+  { depth: 0.05, id: 'b', opacity: 0.6 },
+  { depth: 0.09, id: 'c', opacity: 0.35 },
 ]
 
 export default function Starfield() {
@@ -50,10 +50,10 @@ export default function Starfield() {
       <div className="absolute inset-0 starfield-nebula" />
       {LAYERS.map((layer) => (
         <div
-          key={layer.count}
-          data-layer={layer.count}
+          key={layer.id}
+          data-layer={layer.id}
           data-depth={layer.depth}
-          className={`absolute inset-0 starfield-layer starfield-${layer.count}`}
+          className={`absolute inset-0 starfield-layer starfield-${layer.id}`}
           style={{ opacity: layer.opacity, willChange: 'transform' }}
         />
       ))}

@@ -157,9 +157,15 @@ body {
   width: 260px; height: 260px;
   margin: -130px 0 0 -130px;
   border-radius: 9999px;
-  z-index: 5;
+  /* Above LandingPage's `relative z-10` content wrapper, which opens a
+     stacking context the glow would otherwise paint behind entirely. */
+  z-index: 15;
   background: radial-gradient(circle, var(--accent) 0%, transparent 62%);
-  opacity: .10;
+  /* Starts invisible: the element sits at the viewport origin until the
+     first pointermove, and a 260px blob parked in the top-left corner on
+     every page load is not the effect. CursorGlow.jsx reveals it. */
+  opacity: 0;
+  transition: opacity .3s ease-out;
   mix-blend-mode: screen;
   will-change: transform;
 }

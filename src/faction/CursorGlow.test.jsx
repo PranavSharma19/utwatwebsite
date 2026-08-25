@@ -78,4 +78,24 @@ describe('CursorGlow', () => {
       expect.anything()
     )
   })
+
+  // The element is position:fixed at the viewport origin until the first
+  // pointermove moves it, so shipping it visible painted a 260px accent blob
+  // in the top-left corner of every page load.
+  it('stays invisible until the pointer first moves', async () => {
+    mockMedia()
+    const { container } = render(<CursorGlow />)
+    const glow = container.querySelector('[data-cursor-glow]')
+
+    expect(glow.style.opacity).toBe('')
+    expect(glow.style.transform).toBe('')
+
+    // jsdom has no PointerEvent constructor; the listener only reads
+    // clientX/clientY, so a MouseEvent named 'pointermove' is equivalent.
+    window.dispatchEvent(new window.MouseEvent('pointermove', { clientX: 120, clientY: 80 }))
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
+    expect(glow.style.transform).toBe('translate3d(120px, 80px, 0)')
+    expect(Number(glow.style.opacity)).toBeGreaterThan(0)
+  })
 })

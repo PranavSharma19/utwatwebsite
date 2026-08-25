@@ -1,12 +1,30 @@
 import { useState } from 'react';
 import { BookOpen, GraduationCap, Compass, Users, Network, TrendingUp } from 'lucide-react';
+import { useFaction } from '../faction/FactionContext';
 import wataiLogoImg from '../assets/wat-ai-logo.avif';
 import utmistLogoImg from '../assets/utmist-logo.png';
 import utmistLogoWithTextImg from '../assets/utmist-logo-with-text.png';
 import TugOfWar from '../cheer/TugOfWar';
 
 export default function OrgSpotlight() {
-  const [activeOrg, setActiveOrg] = useState('utmist'); // 'utmist' or 'watai'
+  // Seeded from — and kept in step with — the one faction source, so a
+  // visitor who picks WAT.ai in the hero does not scroll down to find the
+  // Organizers section still showing UTMIST. The manual toggle below still
+  // works and still wins until the faction changes again; this panel is a
+  // browsable comparison, not a second way to pick a side, so it is
+  // deliberately not writing back to FactionContext.
+  //
+  // Adjust-state-during-render rather than an effect: this repo's
+  // eslint-plugin-react-hooks 7.x errors on react-hooks/set-state-in-effect,
+  // and the effect version would also paint one frame of the wrong org.
+  const { faction } = useFaction();
+  const [activeOrg, setActiveOrg] = useState(faction ?? 'utmist'); // 'utmist' or 'watai'
+  const [lastFaction, setLastFaction] = useState(faction);
+
+  if (faction !== lastFaction) {
+    setLastFaction(faction);
+    if (faction) setActiveOrg(faction);
+  }
 
   const utmistStats = [
     { label: 'AI/ML Projects', val: '60+', desc: 'Research & implementation models', icon: Compass },
@@ -117,8 +135,17 @@ export default function OrgSpotlight() {
                   const Icon = stat.icon;
                   return (
                     <div key={stat.label} className="space-y-2">
+                      {/*
+                        The blue side takes the full token where the gold
+                        side can afford /60. That asymmetry is the palette's,
+                        not an oversight: `signal` is already a lightened
+                        derivative of `uoft`, so a further 40% off drops it
+                        to 3.37:1 on the bg-uoft/40 panel, while
+                        text-waterloo/60 still measures 5.02:1 on its own
+                        bg-waterloo/10 panel. Full text-signal is 6.90:1.
+                      */}
                       <div className={`flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider ${
-                        activeOrg === 'utmist' ? 'text-signal/60' : 'text-waterloo/60'
+                        activeOrg === 'utmist' ? 'text-signal' : 'text-waterloo/60'
                       }`}>
                         <Icon size={12} className={activeOrg === 'utmist' ? 'text-signal' : 'text-waterloo'} />
                         {stat.label}
