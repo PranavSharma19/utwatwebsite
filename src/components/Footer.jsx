@@ -1,5 +1,6 @@
 import { FaLinkedin } from "react-icons/fa";
 import { FiMail, FiTerminal } from "react-icons/fi";
+import { scrollBehavior } from "../lib/motion";
 
 function LinkedInIcon(props) {
   return <FaLinkedin aria-hidden="true" {...props} />;
@@ -12,7 +13,7 @@ export default function Footer() {
     e.preventDefault();
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
+      behavior: scrollBehavior(),
     });
   };
 
@@ -81,7 +82,6 @@ export default function Footer() {
               >
                 About
               </a>
-              {/* <a href="#missions" className="text-muted hover:text-accent transition-colors">Missions</a> */}
               <a
                 href="#organizations"
                 className="text-muted hover:text-accent transition-colors"

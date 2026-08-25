@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { scrollBehavior } from "../lib/motion";
 import wataiLogoImg from "../assets/wat-ai-logo.avif";
 import utmistLogoWithTextImg from "../assets/utmist-logo-with-text.png";
 
 const NAV_LINKS = [
   { name: "About", href: "#about" },
-  // { name: 'Mission', href: '#missions' },
   { name: "Organizers", href: "#organizations" },
   { name: "Sponsors", href: "#sponsors" },
   { name: "FAQ", href: "#faq" },
@@ -47,7 +47,7 @@ export default function Navbar() {
     if (href === "#") {
       window.scrollTo({
         top: 0,
-        behavior: "smooth",
+        behavior: scrollBehavior(),
       });
       return;
     }
@@ -60,13 +60,13 @@ export default function Navbar() {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth",
+        behavior: scrollBehavior(),
       });
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-accent/10 bg-void/50 shadow-lg shadow-black/20 transition-all duration-300">
+    <header className="sticky top-0 z-50 w-full border-b border-accent/10 bg-void/50 backdrop-blur-xl shadow-lg shadow-black/20 transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-container-max items-center justify-between px-gutter">
         {/* Brand Logo - Styled in Sagburn display font with dynamic cyber gold glow */}
         <a
@@ -149,7 +149,7 @@ export default function Navbar() {
 
       {/* Mobile Nav Overlay */}
       {isOpen && (
-        <div className="absolute top-20 left-0 right-0 border-b border-accent/10 bg-void/95 p-6 md:hidden shadow-2xl animate-fadeIn">
+        <div className="absolute top-20 left-0 right-0 border-b border-accent/10 bg-void/95 backdrop-blur-2xl p-6 md:hidden shadow-2xl animate-fadeIn">
           <div className="flex flex-col gap-4">
             {NAV_LINKS.map((link) => {
               const isActive = activeSection === link.href;

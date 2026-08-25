@@ -47,7 +47,7 @@ export default function About() {
         </div>
 
         {/* 3 Core Cards with customized interactive glows */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6" id="missions">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {objectiveCards.map((card, i) => {
             const Icon = card.icon;
             return (
@@ -57,7 +57,18 @@ export default function About() {
               >
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <span className="font-mono text-xs text-accent/30">GOAL 0{i + 1}</span>
+                    {/*
+                      /80, not /30: this is real text, so it owes 4.5:1
+                      against the card's effective bg-uoft/20-on-void fill
+                      (#0E1524). /30 measured 2.11:1 neutral and 1.78:1 in
+                      the utmist state. The utmist accent is the binding
+                      case — `signal` is already a lightened derivative, so
+                      it loses contrast fastest as alpha drops, and even /70
+                      only reaches 4.28:1 there. /80 clears it at 5.23:1
+                      (7.55:1 neutral, 8.53:1 watai). The dot beside it is
+                      decorative and carries no requirement.
+                    */}
+                    <span className="font-mono text-xs text-accent/80">GOAL 0{i + 1}</span>
                     <span className="h-1.5 w-1.5 rounded-full bg-accent/30" />
                   </div>
 

@@ -37,24 +37,28 @@ body {
   --accent-ink: rgb(var(--accent-ink-rgb));
 }
 
-/* Modern keyframe animations */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.55; }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/*
+ * One global reduced-motion contract.
+ *
+ * Components that can do something smarter under the preference (Starfield
+ * drops its parallax, Crawl renders statically, CursorGlow renders nothing)
+ * still do so individually; this is the backstop for everything that can't
+ * be reasoned about one at a time — Tailwind's animate-* and transition-*
+ * utilities, and the smooth scrolling requested by <html class="scroll-smooth">.
+ * The JS scroll calls in Navbar/Footer read the same preference via
+ * src/lib/motion.js, because scroll-behavior does not govern
+ * window.scrollTo({ behavior: 'smooth' }).
+ */
+@media (prefers-reduced-motion: reduce) {
+  html, body { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom Scrollbar for cyber aesthetic */
