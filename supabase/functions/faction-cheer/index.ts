@@ -114,13 +114,43 @@ const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX_REQUESTS = 5
 const rateLimitHits = new Map<string, number[]>()
 
+// Bound on rateLimitHits' size. This is a public, unauthenticated endpoint,
+// so the map gains roughly one entry per distinct IP seen, and nothing ever
+// touches the entry for an IP that doesn't call back -- left alone that is
+// an unbounded, slow memory leak in a long-lived isolate (and would make the
+// limiter itself the resource an attacker exhausts). Past this many distinct
+// keys, a full sweep drops every entry that has entirely aged out of the
+// window. It's O(map size), but it only runs once the map is actually large,
+// so no setInterval-based reaper is needed.
+const RATE_LIMIT_MAP_SWEEP_THRESHOLD = 10_000
+
+// Filters one IP's hit timestamps down to the current window and writes the
+// result back -- deleting the key outright when nothing survives, rather
+// than leaving an empty array resident forever (the common case for a
+// one-off visitor).
+function pruneHits(ip: string, now: number): number[] {
+  const windowStart = now - RATE_LIMIT_WINDOW_MS
+  const filtered = (rateLimitHits.get(ip) ?? []).filter((t) => t > windowStart)
+  if (filtered.length === 0) {
+    rateLimitHits.delete(ip)
+  } else {
+    rateLimitHits.set(ip, filtered)
+  }
+  return filtered
+}
+
 function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
   const now = Date.now()
-  const windowStart = now - RATE_LIMIT_WINDOW_MS
-  const hits = (rateLimitHits.get(ip) ?? []).filter((t) => t > windowStart)
+
+  if (rateLimitHits.size > RATE_LIMIT_MAP_SWEEP_THRESHOLD) {
+    for (const key of [...rateLimitHits.keys()]) {
+      pruneHits(key, now)
+    }
+  }
+
+  const hits = pruneHits(ip, now)
 
   if (hits.length >= RATE_LIMIT_MAX_REQUESTS) {
-    rateLimitHits.set(ip, hits)
     const retryAfterMs = hits[0] + RATE_LIMIT_WINDOW_MS - now
     return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) }
   }
