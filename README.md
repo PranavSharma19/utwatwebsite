@@ -30,3 +30,19 @@ ADMIN_EMAIL_ALLOWLIST=organizer1@example.com,organizer2@example.com
 ```
 
 Applicants authenticate with passwordless email OTP. Admin access is granted only to authenticated users whose email is in `ADMIN_EMAIL_ALLOWLIST`.
+
+### Faction cheer tracker
+
+Apply `supabase/migrations/202608250001_faction_cheers.sql`, then deploy the
+`faction-cheer` Edge Function. It needs:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=...
+TURNSTILE_SECRET_KEY=...
+CHEER_HASH_SALT=<any long random string>
+ALLOWED_ORIGIN=https://<production-domain>
+```
+
+The `faction_cheers` table has RLS enabled with no policies — it is
+unreachable with the anon key by design. All access goes through the
+function under the service role.
