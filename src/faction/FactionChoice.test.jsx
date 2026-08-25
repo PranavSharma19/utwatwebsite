@@ -49,11 +49,17 @@ describe('FactionChoice', () => {
     expect(document.documentElement.getAttribute('data-faction')).toBe('utmist')
   })
 
-  it('lets the visitor switch sides', async () => {
+  // Allegiance is permanent — see FactionContext.choose().
+  it('locks the choice: the other side stops being a control', async () => {
     const user = userEvent.setup()
     setup()
     await user.click(screen.getByRole('button', { name: /UTMIST/i }))
-    await user.click(screen.getByRole('button', { name: /WAT\.ai/i }))
-    expect(document.documentElement.getAttribute('data-faction')).toBe('watai')
+
+    const other = screen.getByRole('button', { name: /WAT\.ai/i })
+    expect(other).toBeDisabled()
+    await user.click(other)
+    expect(document.documentElement.getAttribute('data-faction')).toBe('utmist')
+    expect(screen.getByRole('button', { name: /UTMIST/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(other).toHaveAttribute('aria-pressed', 'false')
   })
 })

@@ -23,10 +23,20 @@ export function FactionProvider({ children }) {
     else root.removeAttribute('data-faction')
   }, [faction])
 
+  // Allegiance is permanent. Once a side is picked it cannot be swapped: the
+  // tally counts one cheer per visitor, so letting someone flip back and
+  // forth would make the choice meaningless and the bar a toy. Enforced here
+  // rather than in the UI so no future caller can route around it.
+  //
+  // `clear()` below still resets — it exists for tests and for a deliberate
+  // reset, and is not wired to anything a visitor can reach.
   const choose = useCallback((next) => {
     if (!FACTIONS.includes(next)) return
-    setFaction(next)
-    writeFaction(next)
+    setFaction((current) => {
+      if (current !== null) return current
+      writeFaction(next)
+      return next
+    })
   }, [])
 
   const clear = useCallback(() => {

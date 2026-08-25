@@ -120,11 +120,16 @@ export default function FactionChoice({ onCheer }) {
                 key={side}
                 type="button"
                 aria-pressed={chosen}
+                // Allegiance is permanent, so the side not taken stops being
+                // a control once a choice is made. Leaving it clickable but
+                // inert would be worse than disabling it: it would look
+                // actionable and silently do nothing.
+                disabled={other}
                 onClick={() => pick(side)}
                 className={`group flex flex-1 flex-col justify-between gap-6 border-0 p-6 text-left transition-all duration-500 sm:p-8
                   ${SIDE[side].surface} ${SIDE[side].align}
                   ${chosen ? `sm:flex-[1.35] ${SIDE[side].glow}` : ''}
-                  ${other ? 'opacity-55 hover:opacity-80' : 'hover:brightness-125'}`}
+                  ${other ? 'cursor-default opacity-45 saturate-50' : 'hover:brightness-125'}`}
               >
                 <span className="block">
                   <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
@@ -141,7 +146,11 @@ export default function FactionChoice({ onCheer }) {
                     chosen ? SIDE[side].ink : 'text-muted'
                   }`}
                 >
-                  {chosen ? '\u2713 Holding the line' : 'Cheer them on \u2192'}
+                  {chosen
+                    ? '\u2713 Holding the line'
+                    : other
+                      ? 'Their side of the line'
+                      : 'Cheer them on \u2192'}
                 </span>
               </button>
             )

@@ -55,13 +55,23 @@ describe('FactionProvider', () => {
     expect(document.documentElement.getAttribute('data-faction')).toBe('watai')
   })
 
-  it('allows switching sides', async () => {
+  // Allegiance is permanent: the tally counts one cheer per visitor, so a
+  // visitor who could flip back and forth would make the choice meaningless.
+  it('refuses to switch sides once one is chosen', async () => {
     const user = userEvent.setup()
     renderProbe()
     await user.click(screen.getByText('pick utmist'))
     await user.click(screen.getByText('pick watai'))
-    expect(screen.getByTestId('faction')).toHaveTextContent('watai')
-    expect(document.documentElement.getAttribute('data-faction')).toBe('watai')
+    expect(screen.getByTestId('faction')).toHaveTextContent('utmist')
+    expect(document.documentElement.getAttribute('data-faction')).toBe('utmist')
+  })
+
+  it('does not re-persist on a blocked switch', async () => {
+    const user = userEvent.setup()
+    renderProbe()
+    await user.click(screen.getByText('pick watai'))
+    await user.click(screen.getByText('pick utmist'))
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('watai')
   })
 
   it('returns to neutral and removes the attribute on clear', async () => {
