@@ -3,7 +3,6 @@ import Starfield from '../components/Starfield';
 import Hero from '../components/Hero';
 import About from '../components/About';
 import OrgSpotlight from '../components/OrgSpotlight';
-// import Missions from '../components/Missions';
 import Sponsors from '../components/Sponsors';
 import Faq from '../components/Faq';
 import Footer from '../components/Footer';
@@ -28,9 +27,6 @@ export default function LandingPage() {
 
           {/* Host Organizations comparison stats showcase */}
           <OrgSpotlight />
-
-          {/* Hackathon track missions command center */}
-          {/* <Missions /> */}
 
           {/* Sponsor titan grids */}
           <Sponsors />
