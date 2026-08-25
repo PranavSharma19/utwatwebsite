@@ -2205,10 +2205,11 @@ Expected: every test passes, zero lint errors, build succeeds.
 
 ```bash
 du -sh dist
-ls dist/assets | grep -E 'background|hand' && echo "FAIL: deleted images still shipping" || echo "OK: images gone"
+ls dist/assets | grep -E 'background' && echo "FAIL: background.png still shipping" || echo "OK: background.png gone"
+ls dist/assets | grep -E 'hand' && echo "OK: hand.png present as intended" || echo "FAIL: hand.png missing"
 ```
 
-Expected: `OK`, and `dist` roughly 4.2 MB smaller than at tag `pre-redesign`.
+Expected: `background.png` gone, `hand.png` present, and `dist` roughly 3.86 MB smaller than at tag `pre-redesign`. (`hand.png` is kept at the user's direction — see spec §7.6.)
 
 - [ ] **Step 3: Manual pass at `http://localhost:5173/`**
 

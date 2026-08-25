@@ -100,7 +100,9 @@ A `Starfield` component replaces the current background system:
 - Two nebulae as large radial gradients — UofT blue bleeding from one corner, Waterloo gold from the opposite — echoing the diagonal already present in `background.png`.
 - Parallax disabled entirely under `prefers-reduced-motion: reduce`; the static field remains.
 
-**This deletes `background.png` (3.86 MB) and `hand.png` (356 KB)** — 4.2 MB of images replaced by a few hundred bytes of CSS. The site currently ships a 3.8 MB background before anything renders.
+**This deletes `background.png` (3.86 MB)** — replaced by a few hundred bytes of CSS. The site currently ships a 3.8 MB background before anything renders.
+
+`hand.png` (356 KB) is **kept** at the user's direction. It was originally slated for deletion as generic-looking stock art, but it is wanted, so it stays — repositioned as a real foreground element against the starfield rather than floating under the deleted glass card. See §7.6.
 
 ## 6. The crawl
 
@@ -148,6 +150,18 @@ Both faction accents are AAA on the void, so theming cannot push any text below 
 ### 7.4 Sponsor exemption
 
 **Sponsor logos and cards never take the faction accent.** Shopify's mark carries brand greens and Accenture's carries purple; a faction wash would corrupt brand assets. The sponsor wall opts out of `--accent` explicitly rather than by omission, so a future global change cannot silently tint it.
+
+### 7.6 The hand
+
+`hand.png` is a chrome-and-blue android hand, kept at the user's direction. It gets a
+real position in the hero composition rather than being reattached where it was — its
+old anchor was the `backdrop-blur` glass title card, which no longer exists.
+
+**It stays faction-neutral.** The mark is blue-purple, close enough to Signal Blue
+`#8BA7DA` that placing it inside either faction's territory would read as the site
+taking UofT's side. It is a raster PNG, so it cannot be recoloured per-faction — a
+`hue-rotate` from blue-purple to gold produces muddy results on a gradient. It therefore
+sits in neutral hero space, outside the split, and never takes `--accent`.
 
 ### 7.5 Cursor
 
@@ -214,7 +228,7 @@ Two rival CS schools and a public counter will be scripted against, quickly. Cli
 
 ### Deleted
 
-`hand.png`, `background.png`, `Hero_old.jsx`, `Hero_old_utf8.jsx`, the `glass-panel` / `glow-text` / `network-pattern` CSS block, and the repeated `NN // SECTION` chip.
+`background.png`, `Hero_old.jsx`, `Hero_old_utf8.jsx`, the `glass-panel` / `glow-text` / `network-pattern` CSS block, and the repeated `NN // SECTION` chip.
 
 ## 10. Accessibility
 
