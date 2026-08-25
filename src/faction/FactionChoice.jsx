@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useFaction } from './FactionContext'
 import { FACTIONS, factionLabel, factionSchool } from '../theme/tokens'
@@ -43,11 +43,22 @@ export default function FactionChoice({ onCheer }) {
   const [captchaToken, setCaptchaToken] = useState('')
   const turnstileRef = useRef(null)
 
+  // interaction-only Turnstile resolves its first token asynchronously, and
+  // the faction choice is the hero's primary call to action — most visitors
+  // click within the window before that token exists. Rather than silently
+  // dropping that first genuine cheer, we hold at most one pending pick and
+  // submit it the moment a token arrives. This is one deferred submission,
+  // not a retry queue: a later pick before the token arrives replaces it, it
+  // is cleared the instant it is submitted, and it is cleared on unmount.
+  const pendingFactionRef = useRef(null)
+
   // The widget only runs when a site key is configured, so local dev and the
   // test environment (where VITE_TURNSTILE_SITE_KEY is unset) keep the
   // faction choice and site-wide theming fully working — only the cheer
   // submission (which the Edge Function requires a token for) is skipped.
   const captchaEnabled = Boolean(TURNSTILE_SITE_KEY)
+
+  useEffect(() => () => { pendingFactionRef.current = null }, [])
 
   const resetCaptcha = () => {
     setCaptchaToken('')
@@ -57,11 +68,17 @@ export default function FactionChoice({ onCheer }) {
   const pick = (side) => {
     choose(side)
     onCheer?.(side)
-    if (captchaEnabled && captchaToken) {
+    if (!captchaEnabled) return
+    if (captchaToken) {
       submitCheer({ faction: side, turnstileToken: captchaToken })
       // Turnstile tokens are single-use; reset after every attempt so a
       // visitor who switches sides doesn't submit a spent token.
       resetCaptcha()
+    } else {
+      // No token yet — queue this pick so it submits as soon as Turnstile
+      // resolves one, rather than dropping it. Replaces any earlier pending
+      // pick; never accumulates more than one.
+      pendingFactionRef.current = side
     }
   }
 
@@ -100,7 +117,19 @@ export default function FactionChoice({ onCheer }) {
         <Turnstile
           ref={turnstileRef}
           siteKey={TURNSTILE_SITE_KEY}
-          onSuccess={(token) => setCaptchaToken(token)}
+          onSuccess={(token) => {
+            const pending = pendingFactionRef.current
+            if (pending) {
+              // A pick already happened while we were waiting for this
+              // token — submit it now instead of leaving it dropped, then
+              // consume the token immediately so it is never replayed.
+              submitCheer({ faction: pending, turnstileToken: token })
+              pendingFactionRef.current = null
+              resetCaptcha()
+              return
+            }
+            setCaptchaToken(token)
+          }}
           onExpire={() => setCaptchaToken('')}
           onError={() => setCaptchaToken('')}
           options={{ appearance: 'interaction-only', theme: 'dark' }}

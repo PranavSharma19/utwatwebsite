@@ -42,6 +42,23 @@ describe('TugOfWar', () => {
     })
   })
 
+  // The floor must only soften the *visual* width. With this same lopsided
+  // tally, aria-valuenow has to report the true ~100 share, not the
+  // floor-clamped ~90 the bar is drawn at — otherwise assistive tech hears
+  // the softened number instead of the honest one. This is the one render
+  // where raw and share actually diverge, so it's the only place a
+  // regression that swaps one for the other would show up.
+  it('reports the true unclamped share to assistive technology even when the floor is engaged', async () => {
+    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1 })
+    setup()
+    await waitFor(() => {
+      const bar = screen.getByRole('meter')
+      const width = parseFloat(screen.getByTestId('tug-utmist').style.width)
+      expect(width).toBeLessThanOrEqual(90)
+      expect(bar).toHaveAttribute('aria-valuenow', '100')
+    })
+  })
+
   it('does not show raw counts', async () => {
     fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
     setup()
