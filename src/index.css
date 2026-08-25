@@ -122,7 +122,7 @@ body {
   width: min(680px, 84vw);
   transform-origin: 50% 100%;
   transform: translateX(-50%) rotateX(52deg);
-  animation: crawl 18s linear forwards;
+  animation: crawl 6.5s linear forwards;
 }
 .crawl-copy {
   color: #FDD54F;
@@ -134,16 +134,23 @@ body {
 }
 @keyframes crawl {
   from { top: 100%; }
-  to   { top: -220%; }
+  to   { top: -180%; }
 }
 .crawl-skip {
   position: absolute;
   right: 16px; bottom: 12px;
-  padding: 6px 10px;
-  border: 1px solid rgba(195, 203, 221, .25);
+  padding: 8px 14px;
+  /* Was rgba(...,.25) at 1px — a dim hairline nobody found. This control is
+     the escape hatch from a timed animation, so it has to be visible. */
+  border: 1px solid rgb(var(--accent-rgb) / .55);
   border-radius: 3px;
-  background: transparent;
+  background: rgb(var(--accent-rgb) / .08);
   cursor: pointer;
+  transition: background .2s ease, border-color .2s ease;
+}
+.crawl-skip:hover {
+  background: rgb(var(--accent-rgb) / .18);
+  border-color: rgb(var(--accent-rgb) / .9);
 }
 @media (prefers-reduced-motion: reduce) {
   .crawl-track { animation: none; top: 20%; transform: translateX(-50%); }

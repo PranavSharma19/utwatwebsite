@@ -10,19 +10,44 @@ import { useEffect, useRef, useState } from 'react'
  * Under prefers-reduced-motion the text renders as a plain static block and
  * onDone fires immediately, so nobody is held behind an animation they asked
  * not to see. A skip control is always available.
+ *
+ * It also plays at most once per browsing session. An intro is a first
+ * impression, not a toll gate — someone who reloads, or comes back from
+ * /apply, should land straight on the page.
  */
+const SEEN_KEY = 'bots.crawlSeen'
+
+function alreadySeen() {
+  try {
+    return window.sessionStorage.getItem(SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markSeen() {
+  try {
+    window.sessionStorage.setItem(SEEN_KEY, '1')
+  } catch {
+    /* session storage can be unavailable; replaying the intro is not worth breaking over */
+  }
+}
+
 export default function Crawl({ text, onDone }) {
   const doneRef = useRef(false)
 
   // Lazy initialiser, not setState inside an effect: this repo's
   // eslint-plugin-react-hooks 7.x sets react-hooks/set-state-in-effect to error.
   const [animated] = useState(
-    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () =>
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !alreadySeen(),
   )
 
   const finish = () => {
     if (doneRef.current) return
     doneRef.current = true
+    markSeen()
     onDone?.()
   }
 

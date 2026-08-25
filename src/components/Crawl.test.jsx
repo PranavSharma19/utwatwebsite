@@ -49,3 +49,48 @@ describe('Crawl', () => {
     expect(onDone).toHaveBeenCalled()
   })
 })
+
+// An intro is a first impression, not a toll gate. Someone who reloads, or
+// comes back from /apply, must land on the page rather than rewatch it.
+describe('Crawl, once per session', () => {
+  beforeEach(() => window.sessionStorage.clear())
+
+  it('animates on the first visit of a session', () => {
+    mockReducedMotion(false)
+    const { container } = render(<Crawl text={COPY} />)
+    expect(container.querySelector('[data-animated="true"]')).toBeInTheDocument()
+  })
+
+  it('does not animate again once it has completed', () => {
+    mockReducedMotion(false)
+    const first = render(<Crawl text={COPY} onDone={vi.fn()} />)
+    first.getByRole('button', { name: /skip/i }).click()
+    first.unmount()
+
+    const { container } = render(<Crawl text={COPY} />)
+    expect(container.querySelector('[data-animated="true"]')).toBeNull()
+    expect(screen.getByText(COPY)).toBeInTheDocument()
+  })
+
+  it('releases the caller immediately on a repeat visit', () => {
+    mockReducedMotion(false)
+    const first = render(<Crawl text={COPY} onDone={vi.fn()} />)
+    first.getByRole('button', { name: /skip/i }).click()
+    first.unmount()
+
+    const onDone = vi.fn()
+    render(<Crawl text={COPY} onDone={onDone} />)
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('still animates when session storage is unavailable', () => {
+    mockReducedMotion(false)
+    const original = window.sessionStorage.getItem
+    window.sessionStorage.getItem = () => {
+      throw new DOMException('denied')
+    }
+    const { container } = render(<Crawl text={COPY} />)
+    expect(container.querySelector('[data-animated="true"]')).toBeInTheDocument()
+    window.sessionStorage.getItem = original
+  })
+})

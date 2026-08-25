@@ -20,4 +20,11 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 afterEach(() => {
   cleanup()
   document.documentElement.removeAttribute('data-faction')
+  // The crawl records a "seen" flag here; without this, the first test to
+  // render it would suppress the animation for every test after it.
+  try {
+    window.sessionStorage.clear()
+  } catch {
+    /* not available in every environment */
+  }
 })
