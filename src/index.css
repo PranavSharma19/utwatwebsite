@@ -128,3 +128,17 @@ body {
   .crawl-track { animation: none; top: 20%; transform: translateX(-50%); }
   .crawl-stage { perspective: none; mask-image: none; height: auto; }
 }
+
+/* Cursor glow — see src/faction/CursorGlow.jsx. Never replaces the native cursor. */
+.cursor-glow {
+  position: fixed;
+  top: 0; left: 0;
+  width: 260px; height: 260px;
+  margin: -130px 0 0 -130px;
+  border-radius: 9999px;
+  z-index: 5;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 62%);
+  opacity: .10;
+  mix-blend-mode: screen;
+  will-change: transform;
+}

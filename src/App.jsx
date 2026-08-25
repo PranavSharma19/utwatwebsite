@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import CursorGlow from './faction/CursorGlow';
 import { FactionProvider } from './faction/FactionContext';
 import AdmissionsAdminPage from './pages/AdmissionsAdminPage';
 import AdmissionsPage from './pages/AdmissionsPage';
@@ -7,6 +8,7 @@ import LandingPage from './pages/LandingPage';
 export default function App() {
   return (
     <FactionProvider>
+      <CursorGlow />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
