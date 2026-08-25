@@ -32,7 +32,7 @@ export default function Faq() {
   };
 
   return (
-    <section className="py-24 relative overflow-hidden bg-uoft/20" id="faq">
+    <section className="py-24 relative overflow-hidden bg-panel/80" id="faq">
       <div className="mx-auto max-w-3xl px-gutter relative z-10">
 
         <div className="text-center mb-16 space-y-4">
@@ -52,7 +52,7 @@ export default function Faq() {
                 <div
                   key={i}
                   className={`rounded-lg border transition-all duration-300 overflow-hidden ${
-                    isOpen ? 'border-accent/60 bg-uoft/20' : 'border-signal/15 bg-uoft/20'
+                    isOpen ? 'border-accent/60 bg-panel/80' : 'border-signal/15 bg-panel/80'
                   }`}
                 >
                   <button

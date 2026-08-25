@@ -8,7 +8,7 @@ export default function Sponsors() {
        introduce `accent` utilities here. */
     <section className="py-24 relative overflow-hidden" id="sponsors">
       {/* Dynamic ambient graphic */}
-      <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-uoft/20 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-panel/80 blur-[100px] pointer-events-none" />
 
       <div className="mx-auto max-w-container-max px-gutter relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -22,7 +22,7 @@ export default function Sponsors() {
         </div>
 
         {/* Sponsor Banner Box */}
-        <div className="border border-signal/15 bg-uoft/20 rounded-3xl p-8 sm:p-12">
+        <div className="border border-signal/15 bg-panel/80 rounded-3xl p-8 sm:p-12">
           {/* Flat wall - every sponsor gets the same footprint. `justify-center`
               centers the final short row rather than leaving a hole in a grid. */}
           <ul className="flex flex-wrap justify-center gap-4 sm:gap-6 list-none p-0 m-0">

@@ -13,6 +13,11 @@
 export const palette = {
   void: '#0A0C14',
   uoft: '#1E3765',
+  // Panel surface. `uoft` maxes out at 1.66:1 against the void even at full
+  // opacity, which is not enough for a card to read as a distinct surface —
+  // at the /20 we were using it measured 1.07:1, i.e. invisible. This is the
+  // same hue, lifted until a panel actually looks like a panel (1.89:1).
+  panel: '#24406F',
   signal: '#8BA7DA',
   waterloo: '#FDD54F',
   ink: '#E2E1EF',

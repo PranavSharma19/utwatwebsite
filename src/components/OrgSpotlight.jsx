@@ -62,12 +62,12 @@ export default function OrgSpotlight() {
 
         {/* Dynamic Dual-Tab System (Combines U of T Blue and Waterloo Gold) */}
         <div className="flex justify-center mb-12">
-          <div className="relative flex rounded-full border border-signal/15 bg-uoft/20 p-1.5">
+          <div className="relative flex rounded-full border border-signal/15 bg-panel/80 p-1.5">
             {/* Sliding backdrop */}
             <div
               className={`absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-12px)] rounded-full transition-all duration-300 ease-out ${
                 activeOrg === 'utmist'
-                  ? 'translate-x-0 bg-uoft/40 border border-signal/60'
+                  ? 'translate-x-0 bg-panel border border-signal/60'
                   : 'translate-x-full bg-waterloo/10 border border-waterloo/60'
               }`}
             />
@@ -100,7 +100,7 @@ export default function OrgSpotlight() {
             
             {/* dynamic background panel card */}
             <div className={`rounded-3xl border p-8 sm:p-10 transition-all duration-500 ease-in-out ${
-              activeOrg === 'utmist' ? 'bg-uoft/40 border-signal/15' : 'bg-waterloo/10 border-waterloo/15'
+              activeOrg === 'utmist' ? 'bg-panel border-signal/15' : 'bg-waterloo/10 border-waterloo/15'
             }`}>
 
               {/* Org Introduction Title */}
@@ -139,7 +139,7 @@ export default function OrgSpotlight() {
                         side can afford /60. That asymmetry is the palette's,
                         not an oversight: `signal` is already a lightened
                         derivative of `uoft`, so a further 40% off drops it
-                        to 3.37:1 on the bg-uoft/40 panel, while
+                        to 3.37:1 on the bg-panel panel, while
                         text-waterloo/60 still measures 5.02:1 on its own
                         bg-waterloo/10 panel. Full text-signal is 6.90:1.
                       */}
@@ -172,7 +172,7 @@ export default function OrgSpotlight() {
           <div className="lg:col-span-4 space-y-6">
             
             {/* Instagram Statistics Card */}
-            <div className={`rounded-lg border bg-uoft/20 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
+            <div className={`rounded-lg border bg-panel/80 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
               activeOrg === 'utmist' ? 'border-signal/15' : 'border-waterloo/15'
             }`}>
               <div className="flex justify-between items-start mb-6">
@@ -198,7 +198,7 @@ export default function OrgSpotlight() {
             </div>
 
             {/* LinkedIn Statistics Card */}
-            <div className={`rounded-lg border bg-uoft/20 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
+            <div className={`rounded-lg border bg-panel/80 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
               activeOrg === 'utmist' ? 'border-signal/15' : 'border-waterloo/15'
             }`}>
               <div className="flex justify-between items-start mb-6">

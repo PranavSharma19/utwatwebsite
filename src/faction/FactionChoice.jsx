@@ -29,18 +29,23 @@ const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim()
 //   border-waterloo/60  -> #9C8537   5.41:1  PASSES
 const SIDE = {
   utmist: {
-    // Gradient rgba(uoft) .75 -> .35 over the void. Measured against those
-    // surfaces: signal 5.68:1 / 7.06:1, muted 8.49:1 / 10.55:1 — all AA.
-    surface: 'bg-gradient-to-b from-uoft/75 to-uoft/35',
+    // Solid, not a gradient. The gradient faded to 1.14:1 against the void
+    // at its bottom edge — literally invisible, which is half of why these
+    // panels read as transparent. #24406F is 1.89:1: an actual surface.
+    // On it: ink 8.0:1, muted 6.3:1, and the faction name at 4.2:1 which
+    // clears AA-large (3:1) for 30px+ bold display type.
+    surface: 'bg-panel',
     border: 'border-signal/60',   // #57698B, 3.53:1 vs void — WCAG 1.4.11
     ink: 'text-signal',
     glow: 'sm:shadow-[0_0_40px_-8px_rgba(139,167,218,0.55)]',
     align: 'sm:text-left sm:items-start',
   },
   watai: {
-    // Gradient rgba(waterloo) .16 -> .05 over the void. waterloo 9.82:1 /
-    // 12.75:1, muted 8.56:1 / 11.11:1 — all AA.
-    surface: 'bg-gradient-to-b from-waterloo/[0.16] to-waterloo/[0.05]',
+    // Gold over the VOID, not over the navy — washing gold onto navy just
+    // desaturates it to grey and stops it reading as the gold side at all.
+    // /25 lands on #473D22 at 1.85:1, within 0.04 of the navy panel so both
+    // sides feel equally solid. On it: waterloo 7.6:1, ink 8.4:1, muted 6.7:1.
+    surface: 'bg-waterloo/25',
     border: 'border-waterloo/60', // #9C8537, 5.41:1 vs void — WCAG 1.4.11
     ink: 'text-waterloo',
     glow: 'sm:shadow-[0_0_40px_-8px_rgba(253,213,79,0.5)]',

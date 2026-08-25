@@ -32,6 +32,7 @@ describe('colour config', () => {
   const DEEP_FIELD = {
     void: '#0A0C14',
     uoft: '#1E3765',
+    panel: '#24406F',
     signal: '#8BA7DA',
     waterloo: '#FDD54F',
     ink: '#E2E1EF',
@@ -71,6 +72,7 @@ describe('colour config', () => {
       'accent-ink',
       'ink',
       'muted',
+      'panel',
       'signal',
       'uoft',
       'void',
