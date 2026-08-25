@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { FactionProvider } from '../faction/FactionContext'
 import TugOfWar from './TugOfWar'
 
-vi.mock('./cheerClient', () => ({
+// Only fetchTally is replaced. subscribeTally and submitCheer stay real, so
+// the "a cheer moves the bar" test below exercises the actual wiring between
+// them rather than a mock of it.
+vi.mock('./cheerClient', async (importOriginal) => ({
+  ...(await importOriginal()),
   fetchTally: vi.fn(),
-  submitCheer: vi.fn(),
 }))
-import { fetchTally } from './cheerClient'
+import { fetchTally, submitCheer } from './cheerClient'
 
 const setup = () => render(<FactionProvider><TugOfWar /></FactionProvider>)
 
@@ -84,5 +87,44 @@ describe('TugOfWar', () => {
     await waitFor(() => {
       expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '50%' })
     })
+  })
+
+  // The two fills are 1.71:1 apart — a hue change and nothing else, which
+  // tritanopes and dim displays lose entirely. The boundary is the component.
+  it('separates the two territories with more than a hue change', async () => {
+    fetchTally.mockResolvedValue({ utmist: 50, watai: 50 })
+    setup()
+    await waitFor(() => expect(screen.getByTestId('tug-divide')).toBeInTheDocument())
+    const divide = screen.getByTestId('tug-divide')
+    expect(divide.className).toMatch(/bg-void/)
+    expect(divide).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  // The bar used to fetch once on mount and never again, so a visitor's own
+  // cheer could not move it in their own session — even though submitCheer
+  // already had the fresh tally in hand and was discarding it.
+  it('follows the tally a cheer returns, without refetching', async () => {
+    import.meta.env.VITE_SUPABASE_URL = 'http://localhost:54321'
+    fetchTally.mockResolvedValue({ utmist: 50, watai: 50 })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '50%' })
+    })
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ utmist: 80, watai: 20 }),
+    }))
+    // act(), because the publish lands as a state update outside React's
+    // own event handling — the real one comes from FactionChoice in the hero.
+    await act(async () => {
+      await submitCheer({ faction: 'utmist', turnstileToken: 'tok' })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '80%' })
+    })
+    expect(fetchTally).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
   })
 })

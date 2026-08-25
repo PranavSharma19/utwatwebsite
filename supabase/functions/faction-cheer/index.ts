@@ -24,6 +24,14 @@ const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN')
 // silently accepting tokens solved on someone else's page.
 const TURNSTILE_EXPECTED_HOSTNAME = Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME')
 
+// Also fails closed, and for a sharper reason than its siblings. An unset
+// salt does not break anything visibly: visitor_hash simply degrades to
+// SHA-256("<ip>|YYYY-MM-DD|"), the deploy looks healthy, and the table then
+// holds effectively reversible IP addresses — the whole IPv4 space is 2^32
+// digests against a known date, minutes of work. Refusing to write is the
+// only safe reading of "no salt configured".
+const CHEER_HASH_SALT = Deno.env.get('CHEER_HASH_SALT')
+
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN ?? '*',
   // Matches supabase/functions/admin-applications/index.ts so a client using
@@ -77,14 +85,31 @@ function extractIp(req: Request): string {
 // household (which typically gets a /64 or larger from its ISP) is one
 // voter, and so RFC 4941 privacy-extension address rotation within that
 // prefix doesn't mint new identities. IPv4 addresses (and the 'unknown'
-// fallback) pass through unchanged. This is a deliberately simple expander —
-// it does not handle embedded IPv4-mapped IPv6 literals (`::ffff:a.b.c.d`) —
-// which is an acceptable gap for a public vote counter.
+// fallback) pass through unchanged.
+//
+// IPv4-mapped and IPv4-compatible forms (`::ffff:a.b.c.d`, `::a.b.c.d`) MUST
+// be pulled out before the `::` expander runs, and this is not a nicety. The
+// expander inserts the synthesized zero groups ahead of the tail, so the
+// first four groups of any `::`-prefixed address are all zeros and
+// `slice(0, 4)` collapses the entire class into one string:
+//
+//   ::ffff:203.0.113.5  ->  0000:0000:0000:0000
+//   ::ffff:8.8.8.8      ->  0000:0000:0000:0000
+//   ::1                 ->  0000:0000:0000:0000
+//
+// That is a single shared dedup identity AND a single shared 5-req/min
+// rate-limit bucket for every client reaching us over an IPv4-mapped socket
+// — i.e. one cheer per day for all of them, and one of them can rate-limit
+// the rest. Returning the embedded dotted quad puts them back on the same
+// footing as a plain IPv4 peer.
 function normalizeIp(ip: string): string {
   const trimmed = ip.trim()
   if (!trimmed.includes(':')) return trimmed // IPv4, or 'unknown'
 
   const withoutZone = trimmed.split('%')[0]
+
+  const last = withoutZone.split(':').pop()
+  if (last?.includes('.')) return last
   const halves = withoutZone.split('::')
   let head: string[]
   let tail: string[]
@@ -164,11 +189,25 @@ async function hashVisitor(normalizedIp: string): Promise<string> {
   // Salt rotates daily so the hash is not a durable identifier. Combined with
   // the per-IP unique index, this means one cheer per IP per UTC day,
   // accumulating into an all-time tally — not one cheer per visitor forever.
-  const salt = Deno.env.get('CHEER_HASH_SALT') ?? ''
+  // Non-null: the POST handler refuses the request before reaching here when
+  // the salt is unset (see the 503 below), so this never silently falls back
+  // to an unsalted, brute-forceable digest.
   const day = new Date().toISOString().slice(0, 10)
-  const data = new TextEncoder().encode(`${normalizedIp}|${day}|${salt}`)
+  const data = new TextEncoder().encode(`${normalizedIp}|${day}|${CHEER_HASH_SALT}`)
   const digest = await crypto.subtle.digest('SHA-256', data)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+// extractIp falls back to the literal 'unknown' when no usable header is
+// present. Cloudflare rejects a siteverify call whose `remoteip` is not a
+// valid address, which would turn every cheer from such a client into
+// `captcha failed` — a hard failure caused by a missing header rather than a
+// failed challenge. `remoteip` is optional, so the field is simply omitted
+// when we don't have an address to put in it.
+const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/
+function isIpAddress(value: string): boolean {
+  if (IPV4.test(value)) return value.split('.').every((o) => Number(o) <= 255)
+  return value.includes(':') && /^[0-9a-fA-F:.]+$/.test(value)
 }
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
@@ -177,7 +216,7 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   const body = new FormData()
   body.append('secret', secret)
   body.append('response', token)
-  body.append('remoteip', ip)
+  if (isIpAddress(ip)) body.append('remoteip', ip)
   const res = await fetch(
     'https://challenges.cloudflare.com/turnstile/v0/siteverify',
     { method: 'POST', body },
@@ -223,7 +262,7 @@ Deno.serve(async (req) => {
 
     if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
 
-    if (!ALLOWED_ORIGIN) {
+    if (!ALLOWED_ORIGIN || !CHEER_HASH_SALT) {
       return json({ error: 'cheer submission is not configured' }, 503)
     }
 

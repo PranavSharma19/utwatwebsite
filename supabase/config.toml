@@ -1,0 +1,22 @@
+# Supabase CLI config, kept in version control so the settings that the
+# faction cheer tracker depends on are reviewable here rather than living
+# only as dashboard state that nobody can diff.
+
+[functions.faction-cheer]
+# Cheering is anonymous by design: there is no sign-in on the landing page and
+# no session to verify. With JWT verification left on (the platform default)
+# the gateway rejects every cheer with a 401 before the function runs, and
+# src/cheer/cheerClient.js swallows failures by contract — so the tug-of-war
+# bar would read 0/0 forever with no error surfaced anywhere.
+#
+# What actually guards this endpoint is inside the function: a Turnstile token
+# verified against TURNSTILE_EXPECTED_HOSTNAME, a per-IP rate limit, and a
+# unique index on (visitor_hash, day). The project apikey is still required by
+# the gateway; cheerClient.js sends it.
+verify_jwt = false
+
+[functions.admin-applications]
+# Unchanged from the platform default, stated explicitly because the admissions
+# portal's admin console genuinely does authenticate: the function reads the
+# caller's JWT and checks the email against ADMIN_EMAIL_ALLOWLIST.
+verify_jwt = true

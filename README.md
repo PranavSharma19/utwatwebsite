@@ -18,6 +18,13 @@ npm run dev
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` before using the portal.
 
+`VITE_TURNSTILE_SITE_KEY` (the public Cloudflare Turnstile sitekey that pairs
+with `TURNSTILE_SECRET_KEY` below) is also a client variable. It is optional
+in the sense that the site works without it — but note what "works" means:
+with it unset the widget never mounts, so no cheer is ever submitted and the
+tug-of-war bar stays at an even split forever, looking entirely healthy. Set
+it in any environment where the cheer tracker is meant to actually count.
+
 ## Supabase Setup
 
 Apply the migration in `supabase/migrations/202606200001_admissions_portal.sql`, then deploy the `admin-applications` Edge Function.
@@ -44,9 +51,19 @@ CHEER_HASH_SALT=<any long random string>
 ALLOWED_ORIGIN=https://<production-domain>
 ```
 
-`ALLOWED_ORIGIN` and `TURNSTILE_EXPECTED_HOSTNAME` are not optional: the
-function fails closed and refuses writes (`GET` still works) if either is
-unset, rather than defaulting open.
+`ALLOWED_ORIGIN`, `TURNSTILE_EXPECTED_HOSTNAME` and `CHEER_HASH_SALT` are not
+optional: the function fails closed and refuses writes (`GET` still works) if
+any of them is unset, rather than defaulting open. `CHEER_HASH_SALT` is the
+one whose absence would otherwise be invisible — without it `visitor_hash`
+degrades to `SHA-256("<ip>|YYYY-MM-DD|")`, which is a 2^32 keyspace against a
+known date, i.e. the table would hold effectively reversible IP addresses
+while the deploy looked perfectly healthy.
+
+`supabase/config.toml` pins `verify_jwt = false` for `faction-cheer`, because
+cheering is anonymous and there is no session to verify; with the platform
+default left on, every cheer is rejected at the gateway with a 401 before the
+function runs. The project anon key is still required and is sent by
+`src/cheer/cheerClient.js`.
 
 The `faction_cheers` table has RLS enabled with no policies — it is
 unreachable with the anon key by design. All access goes through the
