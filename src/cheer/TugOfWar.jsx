@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchTally, subscribeTally } from './cheerClient'
-import { factionLabel } from '../theme/tokens'
+import { factionSchool } from '../theme/tokens'
 
 /** Neither side's *bar* ever drops below this, so a lopsided split still reads
  *  as contested territory. The percentages shown are the true ones — only the
@@ -40,8 +40,8 @@ export default function TugOfWar() {
       */}
       <div className="mb-2 flex items-end justify-between gap-4">
         <div className="text-left">
-          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-signal">
-            {factionLabel.utmist}
+          <div className="font-mono text-[10px] tracking-[.24em] text-signal">
+            {factionSchool.utmist}
           </div>
           <div className="font-display text-2xl font-bold leading-none text-signal sm:text-3xl">
             {empty ? '—' : pct(raw)}
@@ -55,8 +55,8 @@ export default function TugOfWar() {
         </div>
 
         <div className="text-right">
-          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-waterloo">
-            {factionLabel.watai}
+          <div className="font-mono text-[10px] tracking-[.24em] text-waterloo">
+            {factionSchool.watai}
           </div>
           <div className="font-display text-2xl font-bold leading-none text-waterloo sm:text-3xl">
             {empty ? '—' : pct(100 - raw)}
@@ -72,9 +72,9 @@ export default function TugOfWar() {
         aria-valuetext={
           empty
             ? 'No votes yet'
-            : `${factionLabel.utmist} ${pct(raw)}, ${factionLabel.watai} ${pct(100 - raw)}, ${total} votes`
+            : `${factionSchool.utmist} ${pct(raw)}, ${factionSchool.watai} ${pct(100 - raw)}, ${total} votes`
         }
-        aria-label="Share of votes for UTMIST versus WAT.ai"
+        aria-label="Share of votes for UofT versus Waterloo"
         className="flex h-4 w-full overflow-hidden rounded-full border border-signal/60"
       >
         <div

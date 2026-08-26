@@ -34,12 +34,25 @@ export const factionAccent = {
 /** Used before a side is chosen. Favours neither school. */
 export const NEUTRAL_ACCENT = palette.muted
 
-export const factionLabel = {
-  utmist: 'UTMIST',
-  watai: 'WAT.ai',
+/**
+ * The rivalry is between the two SCHOOLS. UTMIST and WAT.ai are the student
+ * clubs hosting the event — they are the organisers, not the sides. The poll
+ * had this inverted, asking people to pick a club when what they identify with
+ * is their university.
+ */
+export const factionSchool = {
+  utmist: 'UofT',
+  watai: 'Waterloo',
 }
 
-export const factionSchool = {
+/** Full names, for anywhere the short form would be ambiguous. */
+export const factionSchoolFull = {
   utmist: 'University of Toronto',
   watai: 'University of Waterloo',
+}
+
+/** The club representing each school. Credited, never the subject of the vote. */
+export const factionClub = {
+  utmist: 'UTMIST',
+  watai: 'WAT.ai',
 }

@@ -13,7 +13,7 @@ vi.mock('../cheer/TugOfWar', () => ({ default: () => null }))
 // Byte-exact, approved crawl copy — see task-10a-brief.md. Do not reword,
 // re-punctuate, or "improve" this string. The dash is an em dash (U+2014).
 const CRAWL_COPY =
-  'Two schools. Thirty-six hours. One arena. UTMIST and WAT.ai send their finest builders to settle it the only way that matters — in code.'
+  'Toronto and Waterloo. Thirty-six hours, one weekend, and whichever school scores highest across all of its teams takes the Maple Cup.'
 
 function mockReducedMotion(reduce) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({

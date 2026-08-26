@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useFaction } from './FactionContext'
-import { FACTIONS, factionLabel, factionSchool } from '../theme/tokens'
+import { FACTIONS, factionClub, factionSchool, palette } from '../theme/tokens'
 import { submitCheer } from '../cheer/cheerClient'
+import useConfetti from './useConfetti'
 import TugOfWar from '../cheer/TugOfWar'
 
 // .trim() strips stray whitespace / BOM that env tooling can prepend, which
@@ -52,11 +53,19 @@ const SIDE = {
   },
 }
 
+// The burst is in the colour you just picked, with ink and muted mixed in so
+// it reads as confetti rather than a spray of one flat hue.
+const CONFETTI = {
+  utmist: [palette.signal, palette.ink, palette.muted, palette.signal],
+  watai: [palette.waterloo, palette.ink, palette.muted, palette.waterloo],
+}
+
 
 export default function FactionChoice({ onCheer }) {
   const { faction, choose } = useFaction()
   const [captchaToken, setCaptchaToken] = useState('')
   const turnstileRef = useRef(null)
+  const { canvasRef, fire } = useConfetti()
 
   // interaction-only Turnstile resolves its first token asynchronously, and
   // the faction choice is the hero's primary call to action — most visitors
@@ -80,7 +89,14 @@ export default function FactionChoice({ onCheer }) {
     turnstileRef.current?.reset()
   }
 
-  const pick = (side) => {
+  const pick = (side, event) => {
+    // Allegiance is permanent, so this fires at most once per visitor. Burst
+    // from the panel they actually clicked rather than from screen centre —
+    // the feedback belongs to the thing they hit.
+    const rect = event?.currentTarget?.getBoundingClientRect()
+    if (rect) {
+      fire({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, CONFETTI[side])
+    }
     choose(side)
     onCheer?.(side)
     if (!captchaEnabled) return
@@ -99,6 +115,14 @@ export default function FactionChoice({ onCheer }) {
 
   return (
     <>
+      {/* Inert overlay for the pick burst. Never intercepts a click, never
+          reaches assistive tech, and draws nothing at all under
+          prefers-reduced-motion. */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-50 h-full w-full"
+      />
       {/* The arena. Two territories meeting at a lit seam, with the hand
           holding the line between them.
 
@@ -129,7 +153,7 @@ export default function FactionChoice({ onCheer }) {
                 // inert would be worse than disabling it: it would look
                 // actionable and silently do nothing.
                 disabled={other}
-                onClick={() => pick(side)}
+                onClick={(event) => pick(side, event)}
                 className={`group flex flex-1 flex-col justify-between gap-6 border-0 p-6 text-left transition-all duration-500 sm:p-8
                   ${SIDE[side].surface} ${SIDE[side].align}
                   ${chosen ? `sm:flex-[1.35] ${SIDE[side].glow}` : ''}
@@ -137,24 +161,24 @@ export default function FactionChoice({ onCheer }) {
               >
                 <span className="block">
                   <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
-                    {factionSchool[side]}
+                    {factionClub[side]}
                   </span>
                   <span
-                    className={`mt-2 block font-display text-3xl font-bold uppercase leading-none sm:text-4xl ${SIDE[side].ink}`}
+                    className={`mt-2 block font-display text-3xl font-bold leading-none sm:text-4xl ${SIDE[side].ink}`}
                   >
-                    {factionLabel[side]}
+                    {factionSchool[side]}
                   </span>
                 </span>
                 <span
-                  className={`block font-mono text-[10px] uppercase tracking-[.2em] ${
+                  className={`block font-mono text-[10px] tracking-[.2em] ${
                     chosen ? SIDE[side].ink : 'text-muted'
                   }`}
                 >
                   {chosen
-                    ? '\u2713 Holding the line'
+                    ? `\u2713 You voted ${factionSchool[side]}`
                     : other
-                      ? 'Their side of the line'
-                      : 'Cheer them on \u2192'}
+                      ? 'Not your side'
+                      : `Vote ${factionSchool[side]}`}
                 </span>
               </button>
             )

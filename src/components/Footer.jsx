@@ -37,8 +37,8 @@ export default function Footer() {
               </span>
             </a>
             <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed font-light">
-              A weekend hackathon between UTMIST at Toronto and WAT.ai at
-              Waterloo.
+              A weekend hackathon between Toronto and Waterloo. Hosted by
+              UTMIST and WAT.ai.
             </p>
 
             {/* Social & Contact Buttons */}

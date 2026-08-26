@@ -18,7 +18,8 @@ import handImg from '../assets/hand.png'
  * through everywhere this section doesn't paint its own surface.
  */
 const CRAWL_COPY =
-  'Two schools. Thirty-six hours. One arena. UTMIST and WAT.ai send their finest builders to settle it the only way that matters — in code.'
+  'Toronto and Waterloo. Thirty-six hours, one weekend, and whichever ' +
+  'school scores highest across all of its teams takes the Maple Cup.'
 
 export default function Hero() {
   const [revealed, setRevealed] = useState(false)
@@ -64,7 +65,7 @@ export default function Hero() {
             </div>
 
             <p className="relative z-20 mt-6 max-w-xl font-sans text-base leading-relaxed text-muted sm:text-lg">
-              Pick a side. It gets settled in September.
+              Vote for your school.
             </p>
 
             <div className="relative z-10 mt-10 w-full">

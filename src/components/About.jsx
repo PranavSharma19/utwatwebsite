@@ -17,7 +17,7 @@ export default function About() {
           </h2>
 
           <p className="font-sans text-base sm:text-lg text-muted leading-relaxed">
-            Battle of the Schools is a weekend hackathon between UTMIST and WAT.ai. Teams from both schools build machine learning projects for thirty-six hours straight.
+            Battle of the Schools is a weekend hackathon between the University of Toronto and the University of Waterloo, hosted by UTMIST and WAT.ai. Teams from both schools build machine learning projects for thirty-six hours straight.
           </p>
           <p className="font-sans text-base sm:text-lg text-muted leading-relaxed">
             Whichever school scores highest across all of its teams takes the <span className="text-waterloo font-semibold animate-pulse">Maple Cup</span>.

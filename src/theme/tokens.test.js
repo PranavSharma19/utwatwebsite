@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { contrastRatio, meetsAA } from './contrast'
-import { palette, FACTIONS, factionAccent, NEUTRAL_ACCENT, factionLabel, factionSchool } from './tokens'
+import { palette, FACTIONS, factionAccent, NEUTRAL_ACCENT, factionSchool, factionSchoolFull, factionClub } from './tokens'
 
 describe('contrast maths', () => {
   it('gives 21:1 for black on white', () => {
@@ -50,28 +50,45 @@ describe('uoft blue is ground-only', () => {
   })
 })
 
+// The sides of the vote are the two SCHOOLS. UTMIST and WAT.ai host the event;
+// they are credited, never the thing being voted on. The poll originally had
+// this inverted and asked people to pick a club.
 describe('faction metadata', () => {
-  it.each(FACTIONS)('has a label for %s', (faction) => {
-    expect(factionLabel[faction]).toBeDefined()
-    expect(typeof factionLabel[faction]).toBe('string')
-    expect(factionLabel[faction].length).toBeGreaterThan(0)
-  })
-
-  it.each(FACTIONS)('has a school name for %s', (faction) => {
-    expect(factionSchool[faction]).toBeDefined()
+  it.each(FACTIONS)('names a school for %s', (faction) => {
     expect(typeof factionSchool[faction]).toBe('string')
     expect(factionSchool[faction].length).toBeGreaterThan(0)
   })
 
-  it('has correct label values', () => {
-    expect(factionLabel).toEqual({
-      utmist: 'UTMIST',
-      watai: 'WAT.ai',
-    })
+  it.each(FACTIONS)('names a full school title for %s', (faction) => {
+    expect(factionSchoolFull[faction]).toMatch(/^University of /)
   })
 
-  it('has correct school names', () => {
-    expect(factionSchool).toEqual({
+  it.each(FACTIONS)('credits a host club for %s', (faction) => {
+    expect(typeof factionClub[faction]).toBe('string')
+    expect(factionClub[faction].length).toBeGreaterThan(0)
+  })
+
+  it('uses the schools as the sides', () => {
+    expect(factionSchool).toEqual({ utmist: 'UofT', watai: 'Waterloo' })
+  })
+
+  // "UofT" is a proper noun with specific casing. Anything that uppercases it
+  // renders "UOFT", which is wrong to anyone who actually goes there — so the
+  // token keeps its own casing and the UI must not transform it.
+  it('preserves UofT casing rather than flattening it', () => {
+    expect(factionSchool.utmist).toBe('UofT')
+    expect(factionSchool.utmist).not.toBe(factionSchool.utmist.toUpperCase())
+  })
+
+  it('keeps the clubs distinct from the schools', () => {
+    expect(factionClub).toEqual({ utmist: 'UTMIST', watai: 'WAT.ai' })
+    for (const faction of FACTIONS) {
+      expect(factionClub[faction]).not.toBe(factionSchool[faction])
+    }
+  })
+
+  it('spells the full school names out', () => {
+    expect(factionSchoolFull).toEqual({
       utmist: 'University of Toronto',
       watai: 'University of Waterloo',
     })
