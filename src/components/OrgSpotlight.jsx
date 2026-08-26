@@ -26,27 +26,37 @@ export default function OrgSpotlight() {
   }
 
   const utmistStats = [
-    { label: 'AI/ML Projects', val: '60+', desc: 'Research & implementation models', icon: Compass },
-    { label: 'Developers', val: '400+', desc: 'Active student contributors', icon: Users },
-    { label: 'Articles', val: '50+', desc: 'Technical writeups published', icon: BookOpen },
-    { label: 'Workshops', val: '25+', desc: 'Academic masterclasses taught', icon: GraduationCap }
+    { label: 'AI/ML Projects', val: '60+', desc: 'Models built and shipped', icon: Compass },
+    { label: 'Developers', val: '400+', desc: 'Students actively contributing', icon: Users },
+    { label: 'Articles', val: '50+', desc: 'Articles published', icon: BookOpen },
+    { label: 'Workshops', val: '25+', desc: 'Workshops run', icon: GraduationCap }
   ];
 
   const wataiStats = [
-    { label: 'AI/ML Projects', val: '40+', desc: 'Industry-partnered builds', icon: Compass },
-    { label: 'Program Graduates', val: '450+', desc: 'Elite practitioners trained', icon: GraduationCap },
-    { label: 'Articles & Notebooks', val: '20+', desc: 'Research artifacts published', icon: BookOpen },
-    { label: 'Active Partnerships', val: '12+', desc: 'Enterprise integrations', icon: Network }
+    { label: 'AI/ML Projects', val: '40+', desc: 'Projects with industry partners', icon: Compass },
+    { label: 'Program Graduates', val: '450+', desc: 'Students through the program', icon: GraduationCap },
+    { label: 'Articles & Notebooks', val: '20+', desc: 'Articles and notebooks', icon: BookOpen },
+    { label: 'Active Partnerships', val: '12+', desc: 'Company partnerships', icon: Network }
   ];
 
   return (
     <section className="py-24 relative overflow-hidden" id="organizations">
-      {/* Background Graphic Glow determined by active tab (Blue vs Gold) */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full blur-[160px] transition-all duration-700 ease-in-out opacity-25 ${
-          activeOrg === 'utmist' ? 'bg-uoft' : 'bg-waterloo'
-        }`} />
-      </div>
+      {/*
+        Ambient glow, painted as a radial-gradient rather than a blurred div.
+        A large blur() is a filter, and Safari rasterizes those lazily: it
+        paints the element's unblurred SQUARE bounding box first and only
+        applies the blur on the next repaint — which is why scrolling appeared
+        to "fix" it. A gradient has no filter to rasterize.
+      */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 pointer-events-none transition-[background] duration-700 ease-in-out"
+        style={{
+          background: `radial-gradient(46% 42% at 50% 50%, ${
+            activeOrg === 'utmist' ? 'rgba(30, 55, 101, .55)' : 'rgba(253, 213, 79, .14)'
+          } 0%, transparent 72%)`,
+        }}
+      />
 
       <div className="mx-auto max-w-container-max px-gutter relative z-10">
 
@@ -56,7 +66,7 @@ export default function OrgSpotlight() {
             Our <span className="text-accent italic">Organizers</span>
           </h2>
           <p className="font-sans text-muted leading-relaxed">
-            Brought to you by North America's premier undergraduate AI organizations. We are uniting our communities to host an unforgettable hackathon experience.
+            Run by the student AI clubs at Toronto and Waterloo, together.
           </p>
         </div>
 
@@ -172,22 +182,30 @@ export default function OrgSpotlight() {
           <div className="lg:col-span-4 space-y-6">
             
             {/* Instagram Statistics Card */}
-            <div className={`rounded-lg border bg-panel/80 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
-              activeOrg === 'utmist' ? 'border-signal/15' : 'border-waterloo/15'
+            <div className={`rounded-lg border p-6 hover:translate-y-[-2px] transition-all duration-300 ${
+              activeOrg === 'utmist'
+                ? 'bg-panel/80 border-signal/15'
+                : 'bg-waterloo/22 border-waterloo/30'
             }`}>
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Instagram</span>
                   <h4 className="font-display text-base font-bold text-ink mt-1">Community</h4>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                  activeOrg === 'utmist'
+                    ? 'bg-signal/10 text-signal border-signal/30'
+                    : 'bg-waterloo/10 text-waterloo border-waterloo/40'
+                }`}>
                   <TrendingUp size={18} />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-3xl font-black text-ink">
+                  <span className={`font-mono text-3xl font-black ${
+                    activeOrg === 'utmist' ? 'text-ink' : 'text-waterloo'
+                  }`}>
                     {activeOrg === 'utmist' ? '5,400+' : '1,600+'}
                   </span>
                   <span className="font-sans text-xs text-muted">followers</span>
@@ -198,22 +216,30 @@ export default function OrgSpotlight() {
             </div>
 
             {/* LinkedIn Statistics Card */}
-            <div className={`rounded-lg border bg-panel/80 p-6 hover:translate-y-[-2px] transition-all duration-300 ${
-              activeOrg === 'utmist' ? 'border-signal/15' : 'border-waterloo/15'
+            <div className={`rounded-lg border p-6 hover:translate-y-[-2px] transition-all duration-300 ${
+              activeOrg === 'utmist'
+                ? 'bg-panel/80 border-signal/15'
+                : 'bg-waterloo/22 border-waterloo/30'
             }`}>
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <span className="font-mono text-[9px] uppercase tracking-widest text-muted">LinkedIn</span>
                   <h4 className="font-display text-base font-bold text-ink mt-1">Network</h4>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                  activeOrg === 'utmist'
+                    ? 'bg-signal/10 text-signal border-signal/30'
+                    : 'bg-waterloo/10 text-waterloo border-waterloo/40'
+                }`}>
                   <TrendingUp size={18} />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-3xl font-black text-ink">
+                  <span className={`font-mono text-3xl font-black ${
+                    activeOrg === 'utmist' ? 'text-ink' : 'text-waterloo'
+                  }`}>
                     {activeOrg === 'utmist' ? '3,600+' : '2,000+'}
                   </span>
                   <span className="font-sans text-xs text-muted">subscribers</span>

@@ -2,7 +2,11 @@ export default function About() {
   return (
     <section className="py-24 relative overflow-hidden" id="about">
       {/* Decorative gradients */}
-      <div className="absolute top-1/2 left-0 h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-accent/5 blur-[100px] pointer-events-none" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-[520px] pointer-events-none"
+        style={{ background: 'radial-gradient(50% 40% at 20% 50%, rgb(var(--accent-rgb) / .10) 0%, transparent 70%)' }}
+      />
 
       <div className="mx-auto max-w-container-max px-gutter relative z-10">
 
@@ -13,10 +17,10 @@ export default function About() {
           </h2>
 
           <p className="font-sans text-base sm:text-lg text-muted leading-relaxed">
-            The Battle of the Schools is an elite hackathon engineered to ignite school spirit by pitting young machine learning engineers and AI researchers against each other in a friendly, weekend-long competition.
+            Battle of the Schools is a weekend hackathon between UTMIST and WAT.ai. Teams from both schools build machine learning projects for thirty-six hours straight.
           </p>
           <p className="font-sans text-base sm:text-lg text-muted leading-relaxed">
-            At the closing ceremony, the university that secures the highest total points across all its participating teams will claim the ultimate bragging rights and take home the coveted <span className="text-waterloo font-semibold animate-pulse">Maple Cup</span>.
+            Whichever school scores highest across all of its teams takes the <span className="text-waterloo font-semibold animate-pulse">Maple Cup</span>.
           </p>
         </div>
       </div>

@@ -7,23 +7,23 @@ export default function Faq() {
   const faqData = [
     {
       q: 'What is a hackathon?',
-      a: "A hackathon is an intense, multi-day engineering event where students collaborate in teams to build functional software or hardware projects from scratch. It is about rapid prototyping, intense learning, and pushing cognitive boundaries in real-time."
+      a: "A weekend where teams build something working from nothing. You start Friday, you demo on Sunday, and most of what you learn happens somewhere in between."
     },
     {
       q: 'Who can attend the Battle?',
-      a: "The Battle of the Schools is primarily open to undergraduate and graduate students currently enrolled in university programs. We welcome developers, designers, product strategists, and AI researchers of all skill levels."
+      a: "Undergrad and grad students at any university. You don't need to be in computer science, and you don't need to have done one before."
     },
     {
       q: 'Do I need to know how to code to join?',
-      a: "While coding is a core part of building functional AI prototypes, successful teams also need talented UI/UX designers, domain experts (chemists, physicists, health analysts), and project orchestrators. If you are passionate about ML applications, there is a place for you in the arena."
+      a: "It helps, but no. Teams also need designers, people who actually understand the problem they're solving, and someone keeping the thing on track. Come anyway."
     },
     {
       q: 'How do team sizes and registration work?',
-      a: "Teams typically consist of 2 to 4 members. You can register with a pre-made team or easily find compatible teammates during our interactive networking sessions at the official opening ceremony."
+      a: "Teams are 2 to 4 people. Register with a team or on your own — there's a team-forming session at the opening ceremony if you show up without one."
     },
     {
       q: 'What resources will be provided during the weekend?',
-      a: "Builders will receive massive developer enablement packages: cloud compute instances, pre-trained AI foundation weights, APIs, robotics simulators, high-compute tokens, on-site mentorship from elite industry teams, and plenty of premium catered food to fuel your build."
+      a: "Cloud compute, model APIs, robotics simulators, mentors from the sponsor companies, and food all weekend."
     }
   ];
 

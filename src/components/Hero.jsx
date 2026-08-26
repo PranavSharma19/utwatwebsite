@@ -42,7 +42,7 @@ export default function Hero() {
             </h1>
 
             <p className="mt-6 max-w-xl font-sans text-base leading-relaxed text-muted sm:text-lg">
-              Pick a side. The rivalry is real, the code is what settles it.
+              Pick a side. It gets settled in September.
             </p>
 
             <div className="mt-10 w-full">

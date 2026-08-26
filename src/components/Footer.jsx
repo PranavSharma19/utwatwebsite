@@ -37,9 +37,8 @@ export default function Footer() {
               </span>
             </a>
             <p className="font-sans text-xs sm:text-sm text-muted leading-relaxed font-light">
-              The premier inter-collegiate battlefield for artificial
-              intelligence and machine learning. Co-hosted by North America's
-              top AI clubs.
+              A weekend hackathon between UTMIST at Toronto and WAT.ai at
+              Waterloo.
             </p>
 
             {/* Social & Contact Buttons */}

@@ -8,7 +8,11 @@ export default function Sponsors() {
        introduce `accent` utilities here. */
     <section className="py-24 relative overflow-hidden" id="sponsors">
       {/* Dynamic ambient graphic */}
-      <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-panel/80 blur-[100px] pointer-events-none" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-[420px] pointer-events-none"
+        style={{ background: 'radial-gradient(38% 60% at 30% 100%, rgba(36, 64, 111, .55) 0%, transparent 72%)' }}
+      />
 
       <div className="mx-auto max-w-container-max px-gutter relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -16,8 +20,7 @@ export default function Sponsors() {
             Our <span className="text-waterloo italic">Sponsors</span>
           </h2>
           <p className="font-sans text-muted leading-relaxed">
-            The industry leaders driving machine learning innovation and funding
-            the next generation of builders.
+            The companies backing Battle of the Schools 2026.
           </p>
         </div>
 
