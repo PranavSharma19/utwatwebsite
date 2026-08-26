@@ -2,9 +2,15 @@ import { useEffect, useState } from 'react'
 import { fetchTally, subscribeTally } from './cheerClient'
 import { factionSchool } from '../theme/tokens'
 
-/** Neither side's *bar* ever drops below this, so a lopsided split still reads
- *  as contested territory. The percentages shown are the true ones — only the
- *  fill is floored, never the number. */
+/** Neither side's *bar* drops below this while both sides hold votes, so a
+ *  lopsided split still reads as contested territory. The percentages shown
+ *  are the true ones — only the fill is floored, never the number.
+ *
+ *  It does not apply to a shutout. Floored, 100/0 drew a bar at 90/10 while
+ *  the label above it read 100%, and a strip of the other school's colour
+ *  with no votes behind it reads as a rendering bug rather than as a
+ *  courtesy. Softening a race nobody is losing yet is the point; inventing
+ *  territory for a side that has nothing is not. */
 const FLOOR = 10
 
 function pct(n) {
@@ -34,7 +40,9 @@ export default function TugOfWar() {
   // Real numbers are shown only when the server actually answered with them.
   const counted = tally.reachable === true && !empty
   const raw = counted ? (tally.utmist / total) * 100 : 50
-  const share = Math.min(100 - FLOOR, Math.max(FLOOR, raw))
+  // Both sides must actually hold votes for the floor to mean anything.
+  const contested = counted && tally.utmist > 0 && tally.watai > 0
+  const share = contested ? Math.min(100 - FLOOR, Math.max(FLOOR, raw)) : raw
 
   // Deliberately not phrased as an error the visitor can act on -- they
   // cannot. It says the count is not live so that a frozen bar is legible as

@@ -45,6 +45,37 @@ describe('TugOfWar', () => {
     })
   })
 
+  // What the floor must NOT do: manufacture territory for a side with no
+  // votes. At 100/0 the bar drew 90/10 under a label reading 100%, so a strip
+  // of Waterloo gold sat there with nothing behind it.
+  it('gives a shut-out side no territory at all', async () => {
+    fetchTally.mockResolvedValue({ utmist: 7, watai: 0, reachable: true })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '100%' })
+      expect(screen.getByTestId('tug-watai')).toHaveStyle({ width: '0%' })
+    })
+  })
+
+  it('gives a shut-out side no territory in the other direction either', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 3, reachable: true })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '0%' })
+      expect(screen.getByTestId('tug-watai')).toHaveStyle({ width: '100%' })
+    })
+  })
+
+  // The bar and the number have to agree once nothing is being softened.
+  it('draws the bar at exactly the number it prints during a shut-out', async () => {
+    fetchTally.mockResolvedValue({ utmist: 7, watai: 0, reachable: true })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByText('100%')).toBeInTheDocument()
+      expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '100%' })
+    })
+  })
+
   // The floor must only soften the *visual* width. With this same lopsided
   // tally, aria-valuenow has to report the true ~100 share, not the
   // floor-clamped ~90 the bar is drawn at — otherwise assistive tech hears
