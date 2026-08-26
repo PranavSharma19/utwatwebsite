@@ -66,9 +66,41 @@ describe('privacy policy accuracy', () => {
     }
   });
 
-  it('explains that the poll stores a hash and never the address itself', () => {
-    expect(text).toContain('hash');
-    expect(text).toMatch(/never (written|stored)/);
+  /**
+   * The poll used to store SHA-256(ip | day | salt) to dedupe by address.
+   * That column is gone, so the policy must not still describe one -- and the
+   * claim that replaced it ("no identifier of any kind") is a stronger promise
+   * than the one it replaced, so it is worth pinning.
+   */
+  it('states that a vote carries no identifier, and does not describe one', () => {
+    expect(text).toContain('no identifier of any kind is stored');
+    expect(text).toMatch(/not your ip address, not a hash of it/);
+    expect(text).toMatch(/does not store it/);
+  });
+
+  /**
+   * The claim above is about server behaviour, which no front-end test can
+   * see. This reads the Edge Function and the migrations instead: if a
+   * per-visitor identifier is ever reintroduced for the poll, the policy
+   * becomes false and this fails.
+   */
+  it('the vote endpoint really stores no per-visitor identifier', () => {
+    const fn = readFileSync(
+      join('supabase', 'functions', 'faction-cheer', 'index.ts'),
+      'utf8',
+    );
+    expect(fn).not.toContain('visitor_hash');
+    expect(fn).not.toContain('hashVisitor');
+    expect(fn).not.toContain('CHEER_HASH_SALT');
+
+    // And the column is actually gone, not merely unused by the function.
+    const migrations = join('supabase', 'migrations');
+    const combined = readdirSync(migrations)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .map((f) => readFileSync(join(migrations, f), 'utf8'))
+      .join('\n');
+    expect(combined).toMatch(/drop column if exists visitor_hash/);
   });
 
   it('covers the browser storage the site sets', () => {

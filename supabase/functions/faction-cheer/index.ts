@@ -35,14 +35,6 @@ const TURNSTILE_EXPECTED_HOSTNAMES = parseList(
   Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME'),
 )
 
-// Also fails closed, and for a sharper reason than its siblings. An unset
-// salt does not break anything visibly: visitor_hash simply degrades to
-// SHA-256("<ip>|YYYY-MM-DD|"), the deploy looks healthy, and the table then
-// holds effectively reversible IP addresses — the whole IPv4 space is 2^32
-// digests against a known date, minutes of work. Refusing to write is the
-// only safe reading of "no salt configured".
-const CHEER_HASH_SALT = Deno.env.get('CHEER_HASH_SALT')
-
 function corsFor(req: Request): Record<string, string> {
   return {
     'Access-Control-Allow-Origin':
@@ -77,19 +69,6 @@ const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
-
-async function hashVisitor(normalizedIp: string): Promise<string> {
-  // Salt rotates daily so the hash is not a durable identifier. Combined with
-  // the per-IP unique index, this means one cheer per IP per UTC day,
-  // accumulating into an all-time tally — not one cheer per visitor forever.
-  // Non-null: the POST handler refuses the request before reaching here when
-  // the salt is unset (see the 503 below), so this never silently falls back
-  // to an unsalted, brute-forceable digest.
-  const day = new Date().toISOString().slice(0, 10)
-  const data = new TextEncoder().encode(`${normalizedIp}|${day}|${CHEER_HASH_SALT}`)
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   const secret = Deno.env.get('TURNSTILE_SECRET_KEY')
@@ -133,9 +112,9 @@ Deno.serve(async (req) => {
   const cors = corsFor(req)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
-  // Identity comes ONLY from request headers plus the server-held salt, never
-  // from the request body — anything the client sends in the body can be
-  // forged and must never influence visitor_hash.
+  // Header-sourced, and used only for Turnstile's remoteip check and the
+  // flood guard. It is never stored, and nothing the client sends in the body
+  // can influence it.
   const ip = extractIp(req.headers)
 
   try {
@@ -143,7 +122,7 @@ Deno.serve(async (req) => {
 
     if (req.method !== 'POST') return json(cors, { error: 'method not allowed' }, 405)
 
-    if (ALLOWED_ORIGINS.length === 0 || !CHEER_HASH_SALT) {
+    if (ALLOWED_ORIGINS.length === 0) {
       return json(cors, { error: 'cheer submission is not configured' }, 503)
     }
 
@@ -177,17 +156,15 @@ Deno.serve(async (req) => {
     if (!(await verifyTurnstile(turnstileToken, ip)))
       return json(cors, { error: 'captcha failed' }, 403)
 
-    // visitor_hash is derived solely from `normalizedIp` (header-sourced,
-    // above) and the CHEER_HASH_SALT secret. `faction` and `turnstileToken`
-    // are the only client-supplied values used, and neither feeds the hash.
-    const visitor_hash = await hashVisitor(normalizedIp)
+    // Every accepted cheer is counted. There is deliberately no per-visitor
+    // key here any more: the poll used to store a hash of (ip, UTC day, salt)
+    // under a unique index, which meant a second person behind the same NAT
+    // -- a household, a phone on the same wifi, a whole residence -- had their
+    // vote silently discarded while the request still returned 200. Turnstile
+    // is the abuse control; the browser holds the one-vote-per-person rule.
+    const { error } = await admin.from('faction_cheers').insert({ faction })
 
-    // Unique index makes a repeat cheer a no-op rather than a double count.
-    const { error } = await admin
-      .from('faction_cheers')
-      .insert({ faction, visitor_hash })
-
-    if (error && error.code !== '23505') throw error
+    if (error) throw error
 
     return json(cors, await tally())
   } catch (err) {

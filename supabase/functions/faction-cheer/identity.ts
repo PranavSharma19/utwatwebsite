@@ -98,7 +98,14 @@ export function isIpAddress(value: string): boolean {
 // corrected IP or it limits nobody (a forgeable IP makes each "identity"
 // disposable).
 export const RATE_LIMIT_WINDOW_MS = 60_000
-export const RATE_LIMIT_MAX_REQUESTS = 5
+
+// A flood guard, not a ballot box. At 5 it was neither: two people sharing a
+// home connection spend that between them just loading the page and voting
+// (a GET on mount plus a POST each), and a lecture hall told to vote at the
+// same moment is behind one NAT address. Since Turnstile already gates every
+// submission, the only thing left worth stopping here is a runaway loop, so
+// the ceiling sits well above any plausible group of real people.
+export const RATE_LIMIT_MAX_REQUESTS = 60
 
 // Bound on the hit map's size. This is a public, unauthenticated endpoint, so
 // the map gains roughly one entry per distinct IP seen, and nothing ever

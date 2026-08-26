@@ -56,8 +56,8 @@ export const privacyPolicy = {
       heading: 'The school poll',
       paragraphs: [
         'Voting in the UofT versus Waterloo poll does not require an account and does not identify you.',
-        'To stop one person voting repeatedly, our server takes your IP address, combines it with a secret value, and stores only the resulting irreversible hash alongside the school you picked. Your IP address itself is never written to our database. The hash cannot be turned back into an address, and we cannot use it to work out who you are or where you were.',
-        'Cloudflare Turnstile also runs on the vote and sign-in forms to distinguish people from bots. Cloudflare receives your IP address and basic browser information as part of that check, under their own privacy terms.',
+        'We record only which school was picked and when. No identifier of any kind is stored against a vote -- not your IP address, not a hash of it, not a cookie. Your browser remembers your own choice so the page can show it back to you; that never leaves your device.',
+        'Cloudflare Turnstile runs on the vote and sign-in forms to distinguish people from bots. Cloudflare receives your IP address and basic browser information as part of that check, under their own privacy terms. Our own server sees your IP address for the length of the request, to pass to that check and to limit floods, and does not store it.',
       ],
     },
     {
