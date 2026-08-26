@@ -64,11 +64,10 @@ export default function Hero() {
               </h1>
             </div>
 
-            <p className="relative z-20 mt-6 max-w-xl font-sans text-base leading-relaxed text-muted sm:text-lg">
-              Vote for your school.
-            </p>
-
-            <div className="relative z-10 mt-10 w-full">
+            {/* The panels say "Vote UofT" and "Vote Waterloo" on them; a line
+                above telling you to vote for your school was restating the
+                buttons. The spacing it used to occupy moves onto the panels. */}
+            <div className="relative z-10 mt-12 w-full">
               <FactionChoice />
             </div>
           </div>
