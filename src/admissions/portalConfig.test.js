@@ -124,3 +124,46 @@ describe('contact links', () => {
     expect(offenders, `hardcoded mailto in: ${offenders.join(', ')}`).toEqual([])
   })
 })
+
+/**
+ * The submission deadline exists twice: once here, and once hard-coded inside
+ * public.submit_application, which is the only path that can mark an
+ * application submitted. When they drifted apart the portal advertised an open
+ * window, accepted a complete form, and rejected the final click -- a failure
+ * that no amount of front-end testing could see, because the front end was
+ * right and the database was not.
+ */
+describe('server-side deadline', () => {
+  const migrationsDir = join('supabase', 'migrations');
+
+  /** The deadline from the newest migration that defines submit_application. */
+  function deadlineInForce() {
+    const defining = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .filter((f) =>
+        readFileSync(join(migrationsDir, f), 'utf8').includes(
+          'function public.submit_application',
+        ),
+      );
+    expect(defining.length).toBeGreaterThan(0);
+    const newest = readFileSync(
+      join(migrationsDir, defining[defining.length - 1]),
+      'utf8',
+    );
+    const match = newest.match(/deadline\s+timestamptz\s*:=\s*'([^']+)'/);
+    expect(match, 'submit_application must declare a deadline').not.toBeNull();
+    return match[1];
+  }
+
+  it('matches the deadline the portal advertises', () => {
+    expect(new Date(deadlineInForce()).toISOString()).toBe(
+      new Date(portalConfig.applicationDeadlineIso).toISOString(),
+    );
+  });
+
+  it('has not already passed at the time the suite runs', () => {
+    // A deadline in the past means submissions are being refused right now.
+    expect(new Date(deadlineInForce()).getTime()).toBeGreaterThan(Date.now());
+  });
+})
