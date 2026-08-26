@@ -62,11 +62,48 @@ function publishTally(tally) {
 }
 
 /**
+ * A tally request started before anything rendered. See `primeTally`.
+ */
+let primed = null
+
+/**
+ * Start fetching the tally now, without waiting for the bar to mount.
+ *
+ * TugOfWar lives behind the hero's opening crawl, so on a cold load its
+ * mount-time fetch did not begin until the animation had finished — the
+ * request queued behind six and a half seconds of dead time, and the bar
+ * then sat blank for a further round trip. Calling this at startup spends
+ * that time instead of waiting it out.
+ *
+ * The result is handed to whichever `fetchTally` asks for it first and then
+ * released, so a later call (a retry, a second mount) still goes to the
+ * network and cannot be served a stale count.
+ */
+export function primeTally() {
+  if (!primed) primed = requestTally()
+  // Nothing may await this yet; without a catch a rejection here would
+  // surface as an unhandled promise rejection. fetchTally does not reject,
+  // so this only guards against a future change that makes it able to.
+  primed.catch(() => {})
+  return primed
+}
+
+/**
  * Never throws: an unconfigured or unreachable tracker degrades to
  * `reachable: false` rather than breaking the page. It degrades *visibly*
  * though — see UNREACHABLE above.
  */
 export async function fetchTally() {
+  if (primed) {
+    const pending = primed
+    primed = null
+    return pending
+  }
+  return requestTally()
+}
+
+/** The actual request, with no priming involved. */
+async function requestTally() {
   const url = endpoint()
   // Missing config counts as unreachable rather than as an empty tally. A
   // build shipped without VITE_SUPABASE_URL cannot ever count a vote, and

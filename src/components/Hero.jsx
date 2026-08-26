@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Crawl from './Crawl'
 import FactionChoice from '../faction/FactionChoice'
+import { primeTally } from '../cheer/cheerClient'
 import handImg from '../assets/hand.png'
 
 /**
@@ -23,6 +24,22 @@ const CRAWL_COPY =
 
 export default function Hero() {
   const [revealed, setRevealed] = useState(false)
+
+  /**
+   * Everything below the crawl is mounted only once it finishes, so on a cold
+   * load the hand started downloading and the tally started fetching *after*
+   * six and a half seconds of animation had already elapsed — the two slowest
+   * things on the page, queued behind the one part that was never waiting on
+   * the network. The crawl is dead time; spend it.
+   *
+   * Both are fire-and-forget. If either fails the reveal is unaffected: the
+   * <img> falls back to fetching normally, and TugOfWar falls back to its own
+   * request.
+   */
+  useEffect(() => {
+    new Image().src = handImg
+    primeTally()
+  }, [])
 
   return (
     <section className="relative overflow-hidden px-gutter py-20 sm:py-28">

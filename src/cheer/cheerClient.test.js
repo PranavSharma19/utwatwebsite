@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchTally, submitCheer, subscribeTally } from './cheerClient'
+import { fetchTally, submitCheer, subscribeTally, primeTally } from './cheerClient'
 
 describe('cheerClient', () => {
   beforeEach(() => {
@@ -131,5 +131,52 @@ describe('cheerClient', () => {
     fetch.mockResolvedValue({ ok: true, json: async () => ({ utmist: 1, watai: 1 }) })
     await submitCheer({ faction: 'utmist', turnstileToken: 'tok' })
     expect(seen).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * TugOfWar sits behind the hero's opening crawl, so its mount-time fetch used
+ * to start only after the animation had run. Priming spends that dead time.
+ */
+describe('primeTally', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    // Drain any tally primed by an earlier test so these start clean.
+    fetchTally()
+  })
+
+  it('starts the request before anyone asks for it', async () => {
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ utmist: 4, watai: 2 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    primeTally()
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    // The bar mounting later must reuse it rather than issue a second one.
+    await expect(fetchTally()).resolves.toEqual({ utmist: 4, watai: 2, reachable: true })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('releases the primed result, so a later call is a fresh request', async () => {
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ utmist: 1, watai: 1 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    primeTally()
+    await fetchTally()
+    await fetchTally()
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not fire twice if primed twice', async () => {
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ utmist: 0, watai: 0 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+    primeTally()
+    primeTally()
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    await fetchTally()
+  })
+
+  // A primed failure must degrade exactly like an unprimed one.
+  it('carries a failure through as unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
+    primeTally()
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
   })
 })
