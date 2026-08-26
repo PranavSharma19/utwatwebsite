@@ -19,7 +19,7 @@ describe('TugOfWar', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('splits the bar in proportion to the tally', async () => {
-    fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
+    fetchTally.mockResolvedValue({ utmist: 75, watai: 25, reachable: true })
     setup()
     await waitFor(() => {
       expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '75%' })
@@ -27,7 +27,7 @@ describe('TugOfWar', () => {
   })
 
   it('sits at an even split when nobody has cheered', async () => {
-    fetchTally.mockResolvedValue({ utmist: 0, watai: 0 })
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
     setup()
     await waitFor(() => {
       expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '50%' })
@@ -36,7 +36,7 @@ describe('TugOfWar', () => {
 
   // Territory, never a scoreline: a side that is losing badly still holds ground.
   it('never lets either side fall below a visible floor', async () => {
-    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1 })
+    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1, reachable: true })
     setup()
     await waitFor(() => {
       const width = parseFloat(screen.getByTestId('tug-utmist').style.width)
@@ -52,7 +52,7 @@ describe('TugOfWar', () => {
   // where raw and share actually diverge, so it's the only place a
   // regression that swaps one for the other would show up.
   it('reports the true unclamped share to assistive technology even when the floor is engaged', async () => {
-    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1 })
+    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1, reachable: true })
     setup()
     await waitFor(() => {
       const bar = screen.getByRole('meter')
@@ -66,7 +66,7 @@ describe('TugOfWar', () => {
   // two raw scores: the event is co-hosted, and a bare scoreline puts one of
   // the two host orgs on their own homepage losing.
   it('shows each side its share, and the turnout', async () => {
-    fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
+    fetchTally.mockResolvedValue({ utmist: 75, watai: 25, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByText('75%')).toBeInTheDocument())
     expect(screen.getByText('25%')).toBeInTheDocument()
@@ -74,7 +74,7 @@ describe('TugOfWar', () => {
   })
 
   it('does not print the two sides as raw scores', async () => {
-    fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
+    fetchTally.mockResolvedValue({ utmist: 75, watai: 25, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByText('75%')).toBeInTheDocument())
     expect(screen.queryByText('75')).toBeNull()
@@ -82,7 +82,7 @@ describe('TugOfWar', () => {
   })
 
   it('invites the first vote instead of showing a hollow 50/50', async () => {
-    fetchTally.mockResolvedValue({ utmist: 0, watai: 0 })
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByText(/no votes yet/i)).toBeInTheDocument())
     expect(screen.queryByText('50%')).toBeNull()
@@ -90,7 +90,7 @@ describe('TugOfWar', () => {
 
   // The floor is a visual courtesy for the bar. The number must stay honest.
   it('reports the true share even when the bar is floored', async () => {
-    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1 })
+    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByText('100%')).toBeInTheDocument())
     const width = parseFloat(screen.getByTestId('tug-utmist').style.width)
@@ -98,13 +98,13 @@ describe('TugOfWar', () => {
   })
 
   it('says vote, not votes, for a single vote', async () => {
-    fetchTally.mockResolvedValue({ utmist: 1, watai: 0 })
+    fetchTally.mockResolvedValue({ utmist: 1, watai: 0, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByText(/1 vote$/)).toBeInTheDocument())
   })
 
   it('exposes the split to assistive technology', async () => {
-    fetchTally.mockResolvedValue({ utmist: 60, watai: 40 })
+    fetchTally.mockResolvedValue({ utmist: 60, watai: 40, reachable: true })
     setup()
     await waitFor(() => {
       const bar = screen.getByRole('meter')
@@ -115,7 +115,7 @@ describe('TugOfWar', () => {
   })
 
   it('renders an even split when the tracker is unreachable', async () => {
-    fetchTally.mockResolvedValue({ utmist: 0, watai: 0 })
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
     setup()
     await waitFor(() => {
       expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '50%' })
@@ -125,7 +125,7 @@ describe('TugOfWar', () => {
   // The two fills are 1.71:1 apart — a hue change and nothing else, which
   // tritanopes and dim displays lose entirely. The boundary is the component.
   it('separates the two territories with more than a hue change', async () => {
-    fetchTally.mockResolvedValue({ utmist: 50, watai: 50 })
+    fetchTally.mockResolvedValue({ utmist: 50, watai: 50, reachable: true })
     setup()
     await waitFor(() => expect(screen.getByTestId('tug-divide')).toBeInTheDocument())
     const divide = screen.getByTestId('tug-divide')
@@ -138,7 +138,7 @@ describe('TugOfWar', () => {
   // already had the fresh tally in hand and was discarding it.
   it('follows the tally a cheer returns, without refetching', async () => {
     import.meta.env.VITE_SUPABASE_URL = 'http://localhost:54321'
-    fetchTally.mockResolvedValue({ utmist: 50, watai: 50 })
+    fetchTally.mockResolvedValue({ utmist: 50, watai: 50, reachable: true })
     setup()
     await waitFor(() => {
       expect(screen.getByTestId('tug-utmist')).toHaveStyle({ width: '50%' })
@@ -159,5 +159,58 @@ describe('TugOfWar', () => {
     })
     expect(fetchTally).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
+  })
+})
+
+/**
+ * The state that did not previously exist. A tracker returning 500 on every
+ * read used to render as "No votes yet — be the first": indistinguishable
+ * from a healthy poll nobody had voted in, which is how a broken tally goes
+ * unnoticed until someone asks why the numbers never moved.
+ */
+describe('TugOfWar when the tracker cannot be reached', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('says the count is unavailable instead of claiming zero votes', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: false })
+    render(<TugOfWar />)
+    expect(await screen.findByText(/live count unavailable/i)).toBeInTheDocument()
+    expect(screen.queryByText(/no votes yet/i)).toBeNull()
+  })
+
+  it('shows no percentages it cannot stand behind', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: false })
+    render(<TugOfWar />)
+    await screen.findByText(/live count unavailable/i)
+    expect(screen.queryByText('50%')).toBeNull()
+    expect(screen.getAllByText('—')).toHaveLength(2)
+  })
+
+  it('tells assistive technology the same thing it tells everyone else', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: false })
+    render(<TugOfWar />)
+    await screen.findByText(/live count unavailable/i)
+    expect(screen.getByRole('meter')).toHaveAttribute(
+      'aria-valuetext',
+      'Live count unavailable',
+    )
+  })
+
+  // The inverse, and the reason `reachable` is three-valued: a real zero
+  // tally must still read as an open poll, not as a fault.
+  it('still invites the first vote when the server really did answer zero', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
+    render(<TugOfWar />)
+    expect(await screen.findByText(/no votes yet/i)).toBeInTheDocument()
+    expect(screen.queryByText(/unavailable/i)).toBeNull()
+  })
+
+  // Before the first response there is nothing to report either way, and
+  // crying wolf on every page load would train everyone to ignore it.
+  it('does not accuse the tracker before the first response lands', () => {
+    fetchTally.mockReturnValue(new Promise(() => {}))
+    render(<TugOfWar />)
+    expect(screen.queryByText(/unavailable/i)).toBeNull()
+    expect(screen.queryByText(/no votes yet/i)).toBeNull()
   })
 })

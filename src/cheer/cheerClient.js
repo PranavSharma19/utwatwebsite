@@ -2,6 +2,17 @@ import { FACTIONS } from '../theme/tokens'
 
 const EMPTY = { utmist: 0, watai: 0 }
 
+/**
+ * A tally the server never answered for. `reachable` is the whole point of
+ * this module's return shape: a tracker that is down and a tracker that has
+ * genuinely counted zero votes both produce 0/0, and without this flag they
+ * render identically — a cheerful "No votes yet" over an endpoint returning
+ * 500 on every read. That is not hypothetical; it is exactly what this site
+ * displayed for the window between the table being created and PostgREST
+ * noticing it existed. Callers that only want numbers can keep ignoring it.
+ */
+const UNREACHABLE = { ...EMPTY, reachable: false }
+
 function endpoint() {
   const base = import.meta.env.VITE_SUPABASE_URL
   return base ? `${base}/functions/v1/faction-cheer` : null
@@ -51,38 +62,41 @@ function publishTally(tally) {
 }
 
 /**
- * The tally is decorative. Every failure path returns zeroes instead of
- * throwing, so an unconfigured or unreachable tracker degrades to an empty
- * bar rather than breaking the page.
+ * Never throws: an unconfigured or unreachable tracker degrades to
+ * `reachable: false` rather than breaking the page. It degrades *visibly*
+ * though — see UNREACHABLE above.
  */
 export async function fetchTally() {
   const url = endpoint()
-  if (!url) return { ...EMPTY }
+  // Missing config counts as unreachable rather than as an empty tally. A
+  // build shipped without VITE_SUPABASE_URL cannot ever count a vote, and
+  // saying so beats rendering a permanently empty bar.
+  if (!url) return { ...UNREACHABLE }
   try {
     const res = await fetch(url, { method: 'GET', headers: { ...authHeaders() } })
-    if (!res.ok) return { ...EMPTY }
-    return normalise(await res.json())
+    if (!res.ok) return { ...UNREACHABLE }
+    return { ...normalise(await res.json()), reachable: true }
   } catch {
-    return { ...EMPTY }
+    return { ...UNREACHABLE }
   }
 }
 
 export async function submitCheer({ faction, turnstileToken }) {
   const url = endpoint()
-  if (!url || !FACTIONS.includes(faction)) return { ...EMPTY }
+  if (!url || !FACTIONS.includes(faction)) return { ...UNREACHABLE }
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ faction, turnstileToken }),
     })
-    if (!res.ok) return { ...EMPTY }
-    const tally = normalise(await res.json())
+    if (!res.ok) return { ...UNREACHABLE }
+    const tally = { ...normalise(await res.json()), reachable: true }
     // Only a real tally is published: the zero-filled failure results above
     // would yank a populated bar back to an even split.
     publishTally(tally)
     return tally
   } catch {
-    return { ...EMPTY }
+    return { ...UNREACHABLE }
   }
 }

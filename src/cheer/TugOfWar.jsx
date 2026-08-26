@@ -12,7 +12,10 @@ function pct(n) {
 }
 
 export default function TugOfWar() {
-  const [tally, setTally] = useState({ utmist: 0, watai: 0 })
+  // `reachable: null` is the pre-fetch state. It is distinct from `false` on
+  // purpose: flashing "unavailable" for the moment before the first response
+  // lands would cry wolf on every page load.
+  const [tally, setTally] = useState({ utmist: 0, watai: 0, reachable: null })
 
   useEffect(() => {
     let alive = true
@@ -24,10 +27,25 @@ export default function TugOfWar() {
     return () => { alive = false; unsubscribe() }
   }, [])
 
+  const unreachable = tally.reachable === false
+  const pending = tally.reachable === null
   const total = tally.utmist + tally.watai
   const empty = total === 0
-  const raw = empty ? 50 : (tally.utmist / total) * 100
+  // Real numbers are shown only when the server actually answered with them.
+  const counted = tally.reachable === true && !empty
+  const raw = counted ? (tally.utmist / total) * 100 : 50
   const share = Math.min(100 - FLOOR, Math.max(FLOOR, raw))
+
+  // Deliberately not phrased as an error the visitor can act on -- they
+  // cannot. It says the count is not live so that a frozen bar is legible as
+  // a broken tracker instead of as a poll nobody has voted in.
+  const caption = unreachable
+    ? 'Live count unavailable'
+    : pending
+      ? '\u00A0' // holds the row's height until the first response lands
+      : empty
+        ? 'No votes yet — be the first'
+        : `${total.toLocaleString()} ${total === 1 ? 'vote' : 'votes'}`
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -44,14 +62,15 @@ export default function TugOfWar() {
             {factionSchool.utmist}
           </div>
           <div className="font-display text-2xl font-bold leading-none text-signal sm:text-3xl">
-            {empty ? '—' : pct(raw)}
+            {counted ? pct(raw) : '—'}
           </div>
         </div>
 
-        <div className="pb-1 text-center font-mono text-[10px] uppercase tracking-[.2em] text-muted">
-          {empty
-            ? 'No votes yet — be the first'
-            : `${total.toLocaleString()} ${total === 1 ? 'vote' : 'votes'}`}
+        <div
+          data-testid="tug-caption"
+          className="pb-1 text-center font-mono text-[10px] uppercase tracking-[.2em] text-muted"
+        >
+          {caption}
         </div>
 
         <div className="text-right">
@@ -59,7 +78,7 @@ export default function TugOfWar() {
             {factionSchool.watai}
           </div>
           <div className="font-display text-2xl font-bold leading-none text-waterloo sm:text-3xl">
-            {empty ? '—' : pct(100 - raw)}
+            {counted ? pct(100 - raw) : '—'}
           </div>
         </div>
       </div>
@@ -70,16 +89,20 @@ export default function TugOfWar() {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuetext={
-          empty
-            ? 'No votes yet'
-            : `${factionSchool.utmist} ${pct(raw)}, ${factionSchool.watai} ${pct(100 - raw)}, ${total} votes`
+          unreachable
+            ? 'Live count unavailable'
+            : counted
+              ? `${factionSchool.utmist} ${pct(raw)}, ${factionSchool.watai} ${pct(100 - raw)}, ${total} votes`
+              : 'No votes yet'
         }
         aria-label="Share of votes for UofT versus Waterloo"
         className="flex h-4 w-full overflow-hidden rounded-full border border-signal/60"
       >
         <div
           data-testid="tug-utmist"
-          className="h-full bg-signal transition-[width] duration-700 ease-out"
+          className={`h-full transition-[width] duration-700 ease-out ${
+            counted ? 'bg-signal' : 'bg-signal/30'
+          }`}
           style={{ width: `${share}%` }}
         />
         {/*
@@ -93,7 +116,9 @@ export default function TugOfWar() {
         <div data-testid="tug-divide" aria-hidden="true" className="h-full w-[2px] shrink-0 bg-void" />
         <div
           data-testid="tug-watai"
-          className="h-full bg-waterloo transition-[width] duration-700 ease-out"
+          className={`h-full transition-[width] duration-700 ease-out ${
+            counted ? 'bg-waterloo' : 'bg-waterloo/30'
+          }`}
           style={{ width: `${100 - share}%` }}
         />
       </div>

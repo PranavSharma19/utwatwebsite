@@ -9,19 +9,35 @@ describe('cheerClient', () => {
   })
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
-  it('returns the tally on success', async () => {
+  it('returns the tally on success, marked reachable', async () => {
     fetch.mockResolvedValue({ ok: true, json: async () => ({ utmist: 7, watai: 5 }) })
-    await expect(fetchTally()).resolves.toEqual({ utmist: 7, watai: 5 })
+    await expect(fetchTally()).resolves.toEqual({ utmist: 7, watai: 5, reachable: true })
   })
 
-  it('returns zeroes rather than throwing when the network fails', async () => {
+  // The distinction the rest of this suite exists to protect: a real 0/0 is
+  // reachable, every failure is not. Without it the UI cannot tell a poll
+  // nobody has voted in from a tracker that is simply down.
+  it('marks a genuine zero tally as reachable', async () => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ utmist: 0, watai: 0 }) })
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: true })
+  })
+
+  it('reports unreachable rather than throwing when the network fails', async () => {
     fetch.mockRejectedValue(new Error('offline'))
-    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0 })
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
   })
 
-  it('returns zeroes rather than throwing on a server error', async () => {
+  it('reports unreachable rather than throwing on a server error', async () => {
     fetch.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
-    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0 })
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
+  })
+
+  // A build shipped without the env var can never count a vote. Reporting it
+  // as an empty tally would render as a permanently, plausibly empty poll.
+  it('reports unreachable when no endpoint is configured', async () => {
+    import.meta.env.VITE_SUPABASE_URL = ''
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('posts the faction and captcha token', async () => {
@@ -34,13 +50,22 @@ describe('cheerClient', () => {
 
   it('refuses an unknown faction without calling the network', async () => {
     await expect(submitCheer({ faction: 'mit', turnstileToken: 't' }))
-      .resolves.toEqual({ utmist: 0, watai: 0 })
+      .resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('coerces malformed counts to zero', async () => {
+  // A rejected cheer -- a failed captcha, a rate limit -- is still a reply
+  // from a working server, but it carries no usable tally, so it is reported
+  // as unreachable rather than publishing zeroes over a populated bar.
+  it('reports unreachable when a cheer is rejected', async () => {
+    fetch.mockResolvedValue({ ok: false, status: 403, json: async () => ({}) })
+    await expect(submitCheer({ faction: 'utmist', turnstileToken: 'tok' }))
+      .resolves.toEqual({ utmist: 0, watai: 0, reachable: false })
+  })
+
+  it('coerces malformed counts to zero but keeps the response reachable', async () => {
     fetch.mockResolvedValue({ ok: true, json: async () => ({ utmist: 'lots' }) })
-    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0 })
+    await expect(fetchTally()).resolves.toEqual({ utmist: 0, watai: 0, reachable: true })
   })
 
   // Supabase's function gateway 401s an unauthenticated call before the
@@ -81,7 +106,7 @@ describe('cheerClient', () => {
 
     await submitCheer({ faction: 'utmist', turnstileToken: 'tok' })
 
-    expect(seen).toHaveBeenCalledWith({ utmist: 9, watai: 3 })
+    expect(seen).toHaveBeenCalledWith({ utmist: 9, watai: 3, reachable: true })
     unsubscribe()
   })
 
