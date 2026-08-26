@@ -62,10 +62,13 @@ export const portalConfig = {
       tone: 'text-rose-300 border-rose-400/30 bg-rose-400/10',
     },
   },
+  // Routes, not absolute URLs: these are pages of this same SPA (see
+  // src/App.jsx). Left empty, they rendered nothing anywhere, while the
+  // application form still required consent to a policy that did not exist.
   policyLinks: {
     codeOfConduct: '',
-    privacy: '',
-    terms: '',
+    privacy: '/privacy',
+    terms: '/terms',
   },
 };
 

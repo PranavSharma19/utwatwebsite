@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { FaLinkedin } from "react-icons/fa";
 import { FiMail, FiTerminal } from "react-icons/fi";
 import { scrollBehavior } from "../lib/motion";
@@ -75,25 +76,45 @@ export default function Footer() {
 
           {/* Nav & Info Column */}
           <div className="flex flex-col items-center md:items-end gap-6">
-            <nav className="flex gap-8 font-sans text-xs uppercase tracking-widest">
+            {/* Root-relative fragments: from /privacy or /terms a bare
+                "#about" only rewrites the fragment and goes nowhere. With the
+                slash the browser navigates home and scrolls, while on the
+                landing page itself only the fragment differs, so it stays a
+                same-document smooth scroll. */}
+            <nav className="flex flex-wrap justify-center gap-x-8 gap-y-3 font-sans text-xs uppercase tracking-widest md:justify-end">
               <a
-                href="#about"
+                href="/#about"
                 className="text-muted hover:text-accent transition-colors"
               >
                 About
               </a>
               <a
-                href="#organizations"
+                href="/#organizations"
                 className="text-muted hover:text-accent transition-colors"
               >
                 Organizers
               </a>
               <a
-                href="#faq"
+                href="/#faq"
                 className="text-muted hover:text-accent transition-colors"
               >
                 FAQ
               </a>
+              {/* Router links, not anchors: these are routes of this same SPA,
+                  and a full page load here would throw away the visitor's
+                  chosen school and replay the intro. */}
+              <Link
+                to={portalConfig.policyLinks.privacy}
+                className="text-muted hover:text-accent transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                to={portalConfig.policyLinks.terms}
+                className="text-muted hover:text-accent transition-colors"
+              >
+                Terms
+              </Link>
             </nav>
 
             <div className="space-y-1.5 text-center md:text-right">

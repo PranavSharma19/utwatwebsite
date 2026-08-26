@@ -496,7 +496,26 @@ export default function ApplicationForm({
           checked={formData.agree_privacy}
           disabled={disabled}
           error={errors.agree_privacy}
-          label="I consent to the organizers storing and reviewing my application data for admissions and event operations."
+          label={
+            <>
+              I consent to the organizers storing and reviewing my application
+              data for admissions and event operations, as described in the{' '}
+              {/* New tab, and the click is stopped from reaching the
+                  surrounding <label>: following it in place would abandon an
+                  unsaved draft, and letting it bubble would tick the box the
+                  applicant was only trying to read about. */}
+              <a
+                href={portalConfig.policyLinks.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="text-accent underline underline-offset-2 hover:text-ink"
+              >
+                Privacy Policy
+              </a>
+              .
+            </>
+          }
           name="agree_privacy"
           onChange={handleChange}
         />
