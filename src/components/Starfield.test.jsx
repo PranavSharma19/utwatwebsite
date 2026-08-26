@@ -17,9 +17,18 @@ describe('Starfield', () => {
     expect(container.firstChild.className).toMatch(/pointer-events-none/)
   })
 
-  it('renders three parallax depth layers', () => {
+  it('renders the constellation art as a parallax layer', () => {
     const { container } = render(<Starfield />)
-    expect(container.querySelectorAll('[data-layer]')).toHaveLength(3)
+    const art = container.querySelector('[data-layer="art"]')
+    expect(art).toBeInTheDocument()
+    expect(art.style.backgroundImage).toMatch(/url\(/)
+  })
+
+  // The artwork already contains stars. Two extra layers of CSS point-stars
+  // on top of it were noise, and the hero read as cluttered with them there.
+  it('does not stack extra dust layers over the artwork', () => {
+    const { container } = render(<Starfield />)
+    expect(container.querySelectorAll('[data-layer]')).toHaveLength(1)
   })
 
   it('never attaches a scroll listener when motion is reduced', () => {

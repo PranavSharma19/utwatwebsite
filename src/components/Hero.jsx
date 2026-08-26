@@ -54,7 +54,7 @@ export default function Hero() {
               <img
                 src={handImg}
                 alt=""
-                className="pointer-events-none absolute left-1/2 top-2 z-0 w-[86%] max-w-[440px] -translate-x-1/2 select-none opacity-55 drop-shadow-[0_0_70px_rgba(139,167,218,0.45)] sm:top-0 sm:max-w-[520px]"
+                className="pointer-events-none absolute left-1/2 top-2 z-0 w-[86%] max-w-[440px] -translate-x-1/2 select-none opacity-[0.18] drop-shadow-[0_0_90px_rgba(139,167,218,0.3)] sm:top-0 sm:max-w-[520px]"
               />
               <h1 className="hero-title relative z-10 mt-6 bg-gradient-to-r from-signal via-ink to-waterloo bg-clip-text font-display text-5xl font-black uppercase leading-[1.05] tracking-tight text-transparent sm:text-7xl">
               Battle of the
