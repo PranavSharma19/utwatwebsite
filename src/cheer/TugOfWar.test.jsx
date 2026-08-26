@@ -45,6 +45,26 @@ describe('TugOfWar', () => {
     })
   })
 
+  // Caught on the live site with a single real vote: the caption read
+  // "1 vote" while the meter's own label read "1 votes".
+  it('says "1 vote", not "1 votes", to assistive technology', async () => {
+    fetchTally.mockResolvedValue({ utmist: 1, watai: 0, reachable: true })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toContain('1 vote')
+      expect(screen.getByRole('meter').getAttribute('aria-valuetext')).not.toContain('1 votes')
+      expect(screen.getByTestId('tug-caption')).toHaveTextContent(/^1 vote$/)
+    })
+  })
+
+  it('pluralises normally above one', async () => {
+    fetchTally.mockResolvedValue({ utmist: 2, watai: 1, reachable: true })
+    setup()
+    await waitFor(() => {
+      expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toContain('3 votes')
+    })
+  })
+
   // What the floor must NOT do: manufacture territory for a side with no
   // votes. At 100/0 the bar drew 90/10 under a label reading 100%, so a strip
   // of Waterloo gold sat there with nothing behind it.

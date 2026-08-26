@@ -17,6 +17,12 @@ function pct(n) {
   return `${Math.round(n)}%`
 }
 
+/** "1 vote", "2 votes" -- used by both the caption and the meter's label,
+ *  which previously disagreed and left screen readers hearing "1 votes". */
+function votes(total) {
+  return `${total.toLocaleString()} ${total === 1 ? 'vote' : 'votes'}`
+}
+
 export default function TugOfWar() {
   // `reachable: null` is the pre-fetch state. It is distinct from `false` on
   // purpose: flashing "unavailable" for the moment before the first response
@@ -53,7 +59,7 @@ export default function TugOfWar() {
       ? '\u00A0' // holds the row's height until the first response lands
       : empty
         ? 'No votes yet — be the first'
-        : `${total.toLocaleString()} ${total === 1 ? 'vote' : 'votes'}`
+        : votes(total)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -100,7 +106,7 @@ export default function TugOfWar() {
           unreachable
             ? 'Live count unavailable'
             : counted
-              ? `${factionSchool.utmist} ${pct(raw)}, ${factionSchool.watai} ${pct(100 - raw)}, ${total} votes`
+              ? `${factionSchool.utmist} ${pct(raw)}, ${factionSchool.watai} ${pct(100 - raw)}, ${votes(total)}`
               : 'No votes yet'
         }
         aria-label="Share of votes for UofT versus Waterloo"
