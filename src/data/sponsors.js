@@ -3,6 +3,7 @@ import bracketbotLogo from "../assets/bracketbot-logo.svg";
 import cognitionLogo from "../assets/cognition-logo.svg";
 import shopifyLogo from "../assets/shopify-logo.svg";
 import steelLogo from "../assets/steel-logo.svg";
+import toralisLogo from "../assets/toralis-logo.png";
 
 /**
  * Single source of truth for the sponsor wall.
@@ -16,8 +17,11 @@ import steelLogo from "../assets/steel-logo.svg";
  * (BracketBot) read as mismatched at identical heights, so each is nudged to
  * sit right against the others.
  *
- * Toralis Labs is a confirmed sponsor but has no usable asset yet — add an
- * entry here once we have one and it appears on the wall automatically.
+ * Toralis Labs is the one mark-only logo here — every other sponsor supplies a
+ * wordmark, so their name reads off the wall and Toralis's does not. Worth
+ * asking them for the full lockup. The supplied file was an opaque webp with a
+ * baked #FBFBFB background and wide margins; it has been keyed to transparency
+ * and cropped so it sits at the same optical weight as the wordmarks.
  */
 export const sponsors = [
   {
@@ -49,6 +53,14 @@ export const sponsors = [
     logo: steelLogo,
     url: "https://steel.dev",
     logoScale: 0.92,
+  },
+  {
+    name: "Toralis Labs",
+    logo: toralisLogo,
+    url: "https://toralislabs.com",
+    // A compact 1.31:1 mark against wordmarks running 3.3:1 and wider. Matching
+    // their heights would leave it looking undersized, so it runs taller.
+    logoScale: 1.25,
   },
 ];
 
