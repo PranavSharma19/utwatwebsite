@@ -4,7 +4,6 @@ import { useFaction } from './FactionContext'
 import { FACTIONS, factionLabel, factionSchool } from '../theme/tokens'
 import { submitCheer } from '../cheer/cheerClient'
 import TugOfWar from '../cheer/TugOfWar'
-import handImg from '../assets/hand.png'
 
 // .trim() strips stray whitespace / BOM that env tooling can prepend, which
 // would otherwise make Cloudflare reject the sitekey as malformed. (Same
@@ -163,13 +162,7 @@ export default function FactionChoice({ onCheer }) {
           return (
             <>
               {panels[0]}
-              <div className="faction-seam" aria-hidden="true">
-                <img
-                  src={handImg}
-                  alt=""
-                  className="faction-seam-hand pointer-events-none select-none"
-                />
-              </div>
+              <div className="faction-seam" aria-hidden="true" />
               {panels[1]}
             </>
           )

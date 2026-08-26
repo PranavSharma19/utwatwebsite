@@ -185,7 +185,7 @@ export default function OrgSpotlight() {
             <div className={`rounded-lg border p-6 hover:translate-y-[-2px] transition-all duration-300 ${
               activeOrg === 'utmist'
                 ? 'bg-panel/80 border-signal/15'
-                : 'bg-waterloo/22 border-waterloo/30'
+                : 'bg-waterloo/20 border-waterloo/30'
             }`}>
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -219,7 +219,7 @@ export default function OrgSpotlight() {
             <div className={`rounded-lg border p-6 hover:translate-y-[-2px] transition-all duration-300 ${
               activeOrg === 'utmist'
                 ? 'bg-panel/80 border-signal/15'
-                : 'bg-waterloo/22 border-waterloo/30'
+                : 'bg-waterloo/20 border-waterloo/30'
             }`}>
               <div className="flex justify-between items-start mb-6">
                 <div>

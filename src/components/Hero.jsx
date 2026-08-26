@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Crawl from './Crawl'
 import FactionChoice from '../faction/FactionChoice'
+import handImg from '../assets/hand.png'
 
 /**
  * The Hero: three beats over the globally-mounted Starfield.
@@ -35,17 +36,38 @@ export default function Hero() {
               Toronto &amp; Waterloo &middot; Late Summer 2026
             </span>
 
-            <h1 className="mt-6 font-display text-5xl font-black uppercase leading-[1.05] tracking-tight text-ink sm:text-7xl">
+            {/*
+              The title carries a blue-to-gold gradient: it literally runs from
+              UTMIST's colour to WAT.ai's, which is the whole premise of the
+              event. This was briefly flattened to plain white with a single
+              accent word — the gradient is the site's signature and the same
+              treatment the navbar wordmark uses.
+            */}
+            {/*
+              The hand, back at hero scale and behind the title rather than
+              stacked after it. At 132px in a seam it read as a leftover; in
+              the original it was a 700px element the title sat over. It is
+              decorative and inert (alt="", pointer-events-none), and it is
+              behind the copy so it can never intercept a click.
+            */}
+            <div className="relative w-full pb-24 sm:pb-32">
+              <img
+                src={handImg}
+                alt=""
+                className="pointer-events-none absolute left-1/2 top-2 z-0 w-[86%] max-w-[440px] -translate-x-1/2 select-none opacity-55 drop-shadow-[0_0_70px_rgba(139,167,218,0.45)] sm:top-0 sm:max-w-[520px]"
+              />
+              <h1 className="hero-title relative z-10 mt-6 bg-gradient-to-r from-signal via-ink to-waterloo bg-clip-text font-display text-5xl font-black uppercase leading-[1.05] tracking-tight text-transparent sm:text-7xl">
               Battle of the
               <br />
-              <span className="text-accent">Schools</span>
-            </h1>
+                Schools
+              </h1>
+            </div>
 
-            <p className="mt-6 max-w-xl font-sans text-base leading-relaxed text-muted sm:text-lg">
+            <p className="relative z-20 mt-6 max-w-xl font-sans text-base leading-relaxed text-muted sm:text-lg">
               Pick a side. It gets settled in September.
             </p>
 
-            <div className="mt-10 w-full">
+            <div className="relative z-10 mt-10 w-full">
               <FactionChoice />
             </div>
           </div>

@@ -237,3 +237,20 @@ body {
 @media (min-width: 640px) {
   .faction-seam-hand { width: 132px; }
 }
+
+/* The gradient title needs a glow, and a glow cannot be a text-shadow when the
+   text itself is transparent (bg-clip-text). Painting it as a blurred copy
+   behind the element is the way to get it back. */
+.hero-title { position: relative; }
+.hero-title::before {
+  content: attr(data-glow);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  filter: blur(22px);
+  opacity: .35;
+  background: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
