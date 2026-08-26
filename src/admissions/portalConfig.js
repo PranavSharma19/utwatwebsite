@@ -9,8 +9,15 @@ export const portalConfig = {
   eventStartIso: '2026-09-12',
   eventEndIso: '2026-09-13',
   applicationDeadlineIso: '2026-09-08T23:59:00-04:00',
-  contactEmail: 'contact@botu.ca',
-  sponsorEmail: 'sponsors@botu.ca',
+  // Both point at the same inbox: the event is student-run and there is no
+  // contact@ / sponsors@ alias behind it. They stay separate keys so a real
+  // sponsorship address can be split out later without hunting call sites.
+  // These were 'contact@botu.ca' and 'sponsors@botu.ca' -- placeholders on a
+  // domain this event does not own, which survived because nothing read
+  // them: the two mailto links on the site hardcoded the real address
+  // instead. They now read from here.
+  contactEmail: 'r342shar@uwaterloo.ca',
+  sponsorEmail: 'r342shar@uwaterloo.ca',
   resumeBucket: 'resumes',
   maxResumeBytes: 10 * 1024 * 1024,
   adminFunctionName: 'admin-applications',

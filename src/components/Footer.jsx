@@ -1,6 +1,7 @@
 import { FaLinkedin } from "react-icons/fa";
 import { FiMail, FiTerminal } from "react-icons/fi";
 import { scrollBehavior } from "../lib/motion";
+import { portalConfig } from "../admissions/portalConfig";
 
 function LinkedInIcon(props) {
   return <FaLinkedin aria-hidden="true" {...props} />;
@@ -63,7 +64,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="mailto:r342shar@uwaterloo.ca"
+                href={`mailto:${portalConfig.contactEmail}`}
                 className="w-10 h-10 rounded-full border border-accent/20 bg-accent/5 flex items-center justify-center text-accent hover:bg-accent hover:text-accent-ink transition-all duration-300"
                 aria-label="Email Contact"
               >

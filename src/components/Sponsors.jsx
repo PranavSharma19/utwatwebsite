@@ -1,5 +1,6 @@
 import { Mail, Globe, Sparkles } from "lucide-react";
 import { sponsors } from "../data/sponsors";
+import { portalConfig } from "../admissions/portalConfig";
 
 export default function Sponsors() {
   return (
@@ -69,7 +70,7 @@ export default function Sponsors() {
             </p>
             <div>
               <a
-                href="mailto:r342shar@uwaterloo.ca"
+                href={`mailto:${portalConfig.sponsorEmail}`}
                 className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-full border border-waterloo/60 text-sm font-bold uppercase tracking-wider text-waterloo hover:border-waterloo hover:bg-waterloo/5 transition-all duration-300"
               >
                 <Mail

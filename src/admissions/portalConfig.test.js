@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { portalConfig, isDeadlinePassed, formatDeadline } from './portalConfig'
 
 /**
@@ -87,5 +89,38 @@ describe('formatDeadline', () => {
       new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' })
         .format(new Date(`2026-${month}-15T12:00:00Z`)),
     )
+  })
+})
+
+describe('portalConfig contact addresses', () => {
+  it('are addresses, not placeholders on a domain the event does not own', () => {
+    for (const key of ['contactEmail', 'sponsorEmail']) {
+      expect(portalConfig[key], key).toMatch(/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i)
+      expect(portalConfig[key], key).not.toMatch(/botu\.ca|example\.|placeholder|test\.com/i)
+    }
+  })
+})
+
+/**
+ * The placeholder addresses above went stale for a specific reason: nothing
+ * read them. Both mailto links on the site hardcoded the real address, so the
+ * config could say anything at all and no page would change. This scans the
+ * source for a literal mailto rather than trusting that to stay true.
+ */
+describe('contact links', () => {
+  const walk = (dir) =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry)
+      if (statSync(full).isDirectory()) return walk(full)
+      return /\.(jsx?|tsx?)$/.test(entry) && !/\.test\./.test(entry) ? [full] : []
+    })
+
+  it('are built from portalConfig, never hardcoded', () => {
+    const offenders = walk('src').filter((file) =>
+      // A mailto followed by anything other than an interpolation is a
+      // literal address that portalConfig cannot reach.
+      /mailto:(?!\$\{)/.test(readFileSync(file, 'utf8')),
+    )
+    expect(offenders, `hardcoded mailto in: ${offenders.join(', ')}`).toEqual([])
   })
 })
