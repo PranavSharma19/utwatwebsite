@@ -34,7 +34,7 @@ export default function Hero() {
         {revealed && (
           <div className="flex w-full flex-col items-center">
             <span className="font-mono text-[10px] uppercase tracking-[.35em] text-muted">
-              Toronto &amp; Waterloo &middot; Late Summer 2026
+              Toronto &amp; Waterloo &middot; September 12&ndash;13, 2026
             </span>
 
             {/*

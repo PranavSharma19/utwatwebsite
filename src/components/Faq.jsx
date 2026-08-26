@@ -7,7 +7,7 @@ export default function Faq() {
   const faqData = [
     {
       q: 'What is a hackathon?',
-      a: "A weekend where teams build something working from nothing. You start Friday, you demo on Sunday, and most of what you learn happens somewhere in between."
+      a: "A weekend where teams build something working from nothing. You start Saturday, you demo on Sunday, and most of what you learn happens somewhere in between."
     },
     {
       q: 'Who can attend the Battle?',

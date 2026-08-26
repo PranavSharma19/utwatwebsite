@@ -256,7 +256,7 @@ export default function AdmissionsPage() {
   return (
     <PortalShell
       onSignOut={handleSignOut}
-      subtitle="The portal for BOTS 2026 applications. Sign in, save your draft, upload an optional resume, and submit before the July admissions deadline."
+      subtitle="The portal for BOTS 2026 applications. Sign in, save your draft, upload an optional resume, and submit before the deadline."
       user={user}
     >
       {!configured && <SetupNotice />}

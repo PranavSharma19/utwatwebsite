@@ -1,8 +1,14 @@
 export const portalConfig = {
   eventName: 'Battle of the Schools',
   eventYear: '2026',
-  eventDateRange: 'July 31-August 2, 2026',
-  applicationDeadlineIso: '2026-07-15T23:59:00-04:00',
+  eventDateRange: 'September 12-13, 2026',
+  // Machine-readable twins of eventDateRange. They exist so the deadline
+  // can be checked against the event rather than trusted to agree with a
+  // prose string somebody edits by hand -- see portalConfig.test.js. Dates
+  // only, no times: the schedule is not settled to the hour.
+  eventStartIso: '2026-09-12',
+  eventEndIso: '2026-09-13',
+  applicationDeadlineIso: '2026-09-08T23:59:00-04:00',
   contactEmail: 'contact@botu.ca',
   sponsorEmail: 'sponsors@botu.ca',
   resumeBucket: 'resumes',
