@@ -151,30 +151,37 @@ export default function FactionChoice({ onCheer }) {
             // before anyone has voted, since the vote cannot be changed.
             const armed = pendingSide === side && faction === null
 
-            return (
-              <div
-                key={side}
-                data-faction-panel={side}
-                className={`flex flex-1 flex-col justify-between gap-6 p-6 transition-all duration-500 sm:p-8
+            // The whole panel is the target. Aiming at a caption is a
+            // needless test of pointer accuracy when there are exactly two
+            // choices occupying half the screen each -- and on a phone the
+            // caption is a ~10px line of mono text, which is well under any
+            // sane touch minimum. Armed, the panel stops being one button and
+            // becomes a pair (Confirm/Cancel), because a button cannot
+            // contain buttons.
+            const panelClass = `flex flex-1 flex-col justify-between gap-6 p-6 text-left transition-all duration-500 sm:p-8
                   ${SIDE[side].surface} ${SIDE[side].align}
                   ${chosen ? `sm:flex-[1.35] ${SIDE[side].glow}` : ''}
-                  ${other ? 'opacity-45 saturate-50' : ''}`}
-              >
-                <span className="block">
-                  <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
-                    {factionClub[side]}
-                  </span>
-                  <span
-                    className={`mt-2 block font-display text-3xl font-bold leading-none sm:text-4xl ${SIDE[side].ink}`}
-                  >
-                    {factionSchool[side]}
-                  </span>
-                </span>
+                  ${other ? 'opacity-45 saturate-50' : ''}`
 
-                {armed ? (
-                  // A button cannot contain buttons, so the armed panel stops
-                  // being one and becomes a pair. The vote is irreversible —
-                  // it stays cancellable right up until Confirm.
+            const header = (
+              <span className="block">
+                <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
+                  {factionClub[side]}
+                </span>
+                <span
+                  className={`mt-2 block font-display text-3xl font-bold leading-none sm:text-4xl ${SIDE[side].ink}`}
+                >
+                  {factionSchool[side]}
+                </span>
+              </span>
+            )
+
+            if (armed) {
+              return (
+                <div key={side} data-faction-panel={side} className={panelClass}>
+                  {header}
+                  {/* The vote is irreversible — it stays cancellable right up
+                      until Confirm. */}
                   <div className={SIDE[side].align.includes('end') ? 'sm:text-right' : ''}>
                     <p className={`font-mono text-[10px] leading-relaxed tracking-[.16em] ${SIDE[side].ink}`}>
                       Lock in {factionSchool[side]}?
@@ -203,29 +210,40 @@ export default function FactionChoice({ onCheer }) {
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    aria-pressed={chosen}
-                    // Once a side is taken the other stops being a control.
-                    // Leaving it clickable but inert would look actionable
-                    // and silently do nothing.
-                    disabled={other || chosen}
-                    onClick={() => setPendingSide(side)}
-                    className={`block w-full font-mono text-[10px] tracking-[.2em] transition-colors ${
-                      chosen ? SIDE[side].ink : 'text-muted'
-                    } ${other || chosen ? 'cursor-default' : 'hover:text-ink'} ${
-                      SIDE[side].align.includes('end') ? 'text-left sm:text-right' : 'text-left'
-                    }`}
-                  >
-                    {chosen
-                      ? `\u2713 You voted ${factionSchool[side]}`
-                      : other
-                        ? 'Not your side'
-                        : `Vote ${factionSchool[side]}`}
-                  </button>
-                )}
-              </div>
+                </div>
+              )
+            }
+
+            return (
+              <button
+                key={side}
+                type="button"
+                data-faction-panel={side}
+                aria-pressed={chosen}
+                // Once a side is taken the other stops being a control.
+                // Leaving it clickable but inert would look actionable and
+                // silently do nothing.
+                disabled={other || chosen}
+                onClick={() => setPendingSide(side)}
+                className={`${panelClass} ${
+                  other || chosen
+                    ? 'cursor-default'
+                    : 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink'
+                }`}
+              >
+                {header}
+                <span
+                  className={`block w-full font-mono text-[10px] tracking-[.2em] transition-colors ${
+                    chosen ? SIDE[side].ink : 'text-muted'
+                  } ${SIDE[side].align.includes('end') ? 'text-left sm:text-right' : 'text-left'}`}
+                >
+                  {chosen
+                    ? `\u2713 You voted ${factionSchool[side]}`
+                    : other
+                      ? 'Not your side'
+                      : `Vote ${factionSchool[side]}`}
+                </span>
+              </button>
             )
           })
           return (

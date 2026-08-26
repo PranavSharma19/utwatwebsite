@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FactionProvider } from './FactionContext'
 import FactionChoice from './FactionChoice'
@@ -124,5 +124,49 @@ describe('FactionChoice confirmation step', () => {
     setup()
     await vote(user, 'uoft')
     expect(screen.queryByRole('button', { name: /^confirm$/i })).toBeNull()
+  })
+})
+
+/**
+ * The target used to be the "Vote UofT" caption alone -- a ~10px line of
+ * mono text, well under any sane touch minimum, sitting inside a panel that
+ * occupies half the screen and looks clickable in its entirety.
+ */
+describe('FactionChoice click target', () => {
+  beforeEach(() => window.localStorage.clear())
+
+  it('is the whole panel, not just the caption', () => {
+    setup()
+    // The panel element and the button are the same element.
+    expect(voteButton('uoft')).toHaveAttribute('data-faction-panel', 'utmist')
+    expect(voteButton('waterloo')).toHaveAttribute('data-faction-panel', 'watai')
+  })
+
+  it('arms from a click on the school name', async () => {
+    const user = userEvent.setup()
+    setup()
+    // Scoped to the panel: the tally below renders the same school names.
+    await user.click(within(voteButton('uoft')).getByText('UofT'))
+    expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+    // Still only armed -- a bigger target must not skip the confirmation.
+    expect(document.documentElement.hasAttribute('data-faction')).toBe(false)
+  })
+
+  it('arms from a click on the hosting club label', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(within(voteButton('waterloo')).getByText('WAT.ai'))
+    expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+  })
+
+  // Cancel and Confirm sit inside the panel. If the panel were still a click
+  // target while armed, Cancel would bubble straight back into re-arming it.
+  it('does not re-arm when Cancel is clicked inside the panel', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(within(voteButton('uoft')).getByText('UofT'))
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+    expect(screen.queryByRole('button', { name: /^confirm$/i })).toBeNull()
+    expect(voteButton('uoft')).toBeInTheDocument()
   })
 })
