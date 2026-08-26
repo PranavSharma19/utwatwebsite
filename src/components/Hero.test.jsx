@@ -42,8 +42,8 @@ describe('Hero', () => {
     expect(
       screen.getByRole('heading', { name: /battle of the schools/i }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /utmist/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /wat\.ai/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /vote uoft/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /vote waterloo/i })).toBeInTheDocument()
   })
 
   it('offers a functional faction choice once the intro has resolved', async () => {
@@ -51,7 +51,8 @@ describe('Hero', () => {
     const user = userEvent.setup()
     setup()
 
-    await user.click(screen.getByRole('button', { name: /utmist/i }))
+    await user.click(screen.getByRole('button', { name: /vote uoft/i }))
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }))
 
     expect(document.documentElement.getAttribute('data-faction')).toBe('utmist')
   })

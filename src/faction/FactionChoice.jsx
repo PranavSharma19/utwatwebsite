@@ -38,6 +38,7 @@ const SIDE = {
     border: 'border-signal/60',   // #57698B, 3.53:1 vs void — WCAG 1.4.11
     ink: 'text-signal',
     glow: 'sm:shadow-[0_0_40px_-8px_rgba(139,167,218,0.55)]',
+    confirm: 'border-signal text-signal hover:bg-signal hover:text-void',
     align: 'sm:text-left sm:items-start',
   },
   watai: {
@@ -49,6 +50,7 @@ const SIDE = {
     border: 'border-waterloo/60', // #9C8537, 5.41:1 vs void — WCAG 1.4.11
     ink: 'text-waterloo',
     glow: 'sm:shadow-[0_0_40px_-8px_rgba(253,213,79,0.5)]',
+    confirm: 'border-waterloo text-waterloo hover:bg-waterloo hover:text-void',
     align: 'sm:text-right sm:items-end',
   },
 }
@@ -66,6 +68,9 @@ export default function FactionChoice({ onCheer }) {
   const [captchaToken, setCaptchaToken] = useState('')
   const turnstileRef = useRef(null)
   const { canvasRef, fire } = useConfetti()
+  // Which side is awaiting confirmation. The vote is irreversible, so the
+  // first click only arms it — nothing is written until Confirm.
+  const [pendingSide, setPendingSide] = useState(null)
 
   // interaction-only Turnstile resolves its first token asynchronously, and
   // the faction choice is the hero's primary call to action — most visitors
@@ -89,14 +94,13 @@ export default function FactionChoice({ onCheer }) {
     turnstileRef.current?.reset()
   }
 
-  const pick = (side, event) => {
-    // Allegiance is permanent, so this fires at most once per visitor. Burst
-    // from the panel they actually clicked rather than from screen centre —
-    // the feedback belongs to the thing they hit.
-    const rect = event?.currentTarget?.getBoundingClientRect()
+  const confirmVote = (side, event) => {
+    // Burst from the panel they committed to, not from screen centre.
+    const rect = event?.currentTarget?.closest('[data-faction-panel]')?.getBoundingClientRect()
     if (rect) {
       fire({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, CONFETTI[side])
     }
+    setPendingSide(null)
     choose(side)
     onCheer?.(side)
     if (!captchaEnabled) return
@@ -143,21 +147,18 @@ export default function FactionChoice({ onCheer }) {
           const panels = FACTIONS.map((side) => {
             const chosen = faction === side
             const other = faction !== null && !chosen
+            // Armed = clicked once, awaiting confirmation. Only reachable
+            // before anyone has voted, since the vote cannot be changed.
+            const armed = pendingSide === side && faction === null
+
             return (
-              <button
+              <div
                 key={side}
-                type="button"
-                aria-pressed={chosen}
-                // Allegiance is permanent, so the side not taken stops being
-                // a control once a choice is made. Leaving it clickable but
-                // inert would be worse than disabling it: it would look
-                // actionable and silently do nothing.
-                disabled={other}
-                onClick={(event) => pick(side, event)}
-                className={`group flex flex-1 flex-col justify-between gap-6 border-0 p-6 text-left transition-all duration-500 sm:p-8
+                data-faction-panel={side}
+                className={`flex flex-1 flex-col justify-between gap-6 p-6 transition-all duration-500 sm:p-8
                   ${SIDE[side].surface} ${SIDE[side].align}
                   ${chosen ? `sm:flex-[1.35] ${SIDE[side].glow}` : ''}
-                  ${other ? 'cursor-default opacity-45 saturate-50' : 'hover:brightness-125'}`}
+                  ${other ? 'opacity-45 saturate-50' : ''}`}
               >
                 <span className="block">
                   <span className="block font-mono text-[10px] uppercase tracking-[.28em] text-muted">
@@ -169,18 +170,62 @@ export default function FactionChoice({ onCheer }) {
                     {factionSchool[side]}
                   </span>
                 </span>
-                <span
-                  className={`block font-mono text-[10px] tracking-[.2em] ${
-                    chosen ? SIDE[side].ink : 'text-muted'
-                  }`}
-                >
-                  {chosen
-                    ? `\u2713 You voted ${factionSchool[side]}`
-                    : other
-                      ? 'Not your side'
-                      : `Vote ${factionSchool[side]}`}
-                </span>
-              </button>
+
+                {armed ? (
+                  // A button cannot contain buttons, so the armed panel stops
+                  // being one and becomes a pair. The vote is irreversible —
+                  // it stays cancellable right up until Confirm.
+                  <div className={SIDE[side].align.includes('end') ? 'sm:text-right' : ''}>
+                    <p className={`font-mono text-[10px] leading-relaxed tracking-[.16em] ${SIDE[side].ink}`}>
+                      Lock in {factionSchool[side]}?
+                      <br />
+                      <span className="text-muted">This can&apos;t be changed later.</span>
+                    </p>
+                    <div
+                      className={`mt-3 flex gap-2 ${
+                        SIDE[side].align.includes('end') ? 'sm:justify-end' : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        autoFocus
+                        onClick={(event) => confirmVote(side, event)}
+                        className={`rounded border px-3 py-1.5 font-mono text-[10px] tracking-[.2em] transition-colors ${SIDE[side].confirm}`}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingSide(null)}
+                        className="rounded border border-muted/40 px-3 py-1.5 font-mono text-[10px] tracking-[.2em] text-muted transition-colors hover:border-muted hover:text-ink"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    aria-pressed={chosen}
+                    // Once a side is taken the other stops being a control.
+                    // Leaving it clickable but inert would look actionable
+                    // and silently do nothing.
+                    disabled={other || chosen}
+                    onClick={() => setPendingSide(side)}
+                    className={`block w-full font-mono text-[10px] tracking-[.2em] transition-colors ${
+                      chosen ? SIDE[side].ink : 'text-muted'
+                    } ${other || chosen ? 'cursor-default' : 'hover:text-ink'} ${
+                      SIDE[side].align.includes('end') ? 'text-left sm:text-right' : 'text-left'
+                    }`}
+                  >
+                    {chosen
+                      ? `\u2713 You voted ${factionSchool[side]}`
+                      : other
+                        ? 'Not your side'
+                        : `Vote ${factionSchool[side]}`}
+                  </button>
+                )}
+              </div>
             )
           })
           return (

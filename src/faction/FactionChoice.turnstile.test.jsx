@@ -87,7 +87,8 @@ describe('FactionChoice with a Turnstile sitekey configured', () => {
 
     // Token resolves before the pick this time.
     await user.click(screen.getByText('fire-success'))
-    await user.click(screen.getByRole('button', { name: /UTMIST/i }))
+    await user.click(screen.getByRole('button', { name: /vote uoft/i }))
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }))
 
     expect(submitCheer).toHaveBeenCalledWith({ faction: 'utmist', turnstileToken: 'token-1' })
   })
@@ -98,7 +99,8 @@ describe('FactionChoice with a Turnstile sitekey configured', () => {
     render(<FactionProvider><FactionChoice /></FactionProvider>)
 
     // Pick happens first, before any token exists.
-    await user.click(screen.getByRole('button', { name: /WAT\.ai/i }))
+    await user.click(screen.getByRole('button', { name: /vote waterloo/i }))
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }))
     expect(submitCheer).not.toHaveBeenCalled()
 
     // Token now resolves — the deferred pick should submit exactly once.
@@ -113,7 +115,8 @@ describe('FactionChoice with a Turnstile sitekey configured', () => {
     render(<FactionProvider><FactionChoice /></FactionProvider>)
 
     await user.click(screen.getByText('fire-success'))
-    await user.click(screen.getByRole('button', { name: /UTMIST/i }))
+    await user.click(screen.getByRole('button', { name: /vote uoft/i }))
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }))
 
     expect(turnstileReset).toHaveBeenCalledTimes(1)
   })
@@ -125,7 +128,8 @@ describe('FactionChoice with a Turnstile sitekey configured', () => {
 
     await user.click(screen.getByText('fire-success'))
     await user.click(screen.getByText('fire-expire'))
-    await user.click(screen.getByRole('button', { name: /UTMIST/i }))
+    await user.click(screen.getByRole('button', { name: /vote uoft/i }))
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }))
 
     // No token is currently held, so the pick is queued as pending rather
     // than submitted with a stale/expired token.
