@@ -52,7 +52,7 @@ export default function Faq() {
                 <div
                   key={i}
                   className={`rounded-lg border transition-all duration-300 overflow-hidden ${
-                    isOpen ? 'border-accent/60 bg-panel/80' : 'border-signal/15 bg-panel/80'
+                    isOpen ? 'border-accent/60 bg-surface/80' : 'border-signal/15 bg-surface/80'
                   }`}
                 >
                   <button

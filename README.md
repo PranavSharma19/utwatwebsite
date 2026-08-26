@@ -16,6 +16,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
+> **Restart the dev server after editing `tailwind.config.js`.** Vite hot-reloads
+> component and CSS edits, but not the Tailwind config — the running process keeps
+> serving the stylesheet it compiled at startup. A new colour token will read as
+> `rgba(0, 0, 0, 0)` in the browser while `npm run build` and the test suite both
+> pass, because those compile fresh. This has caused two separate rounds of
+> "the site is transparent" debugging.
+
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` before using the portal.
 
 `VITE_TURNSTILE_SITE_KEY` (the public Cloudflare Turnstile sitekey that pairs

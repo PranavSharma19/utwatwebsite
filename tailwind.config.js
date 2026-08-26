@@ -43,6 +43,10 @@ export default {
         // `ring-accent/70` and friends silently emit NOTHING. The whole
         // landing page leans on those. See src/index.css for --accent-rgb.
         accent: 'rgb(var(--accent-rgb) / <alpha-value>)',
+        // Section panel surface, switched by [data-faction] in src/index.css.
+        // Same <alpha-value> requirement as accent: a bare var() silently
+        // compiles every opacity-modified utility to nothing.
+        surface: 'rgb(var(--surface-rgb) / <alpha-value>)',
         'accent-ink': 'rgb(var(--accent-ink-rgb) / <alpha-value>)',
         ...legacyAdmissionsColors,
       },

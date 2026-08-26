@@ -74,6 +74,7 @@ describe('colour config', () => {
       'muted',
       'panel',
       'signal',
+      'surface',
       'uoft',
       'void',
       'waterloo',

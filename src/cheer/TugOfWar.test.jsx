@@ -62,12 +62,45 @@ describe('TugOfWar', () => {
     })
   })
 
-  it('does not show raw counts', async () => {
+  // It has to read as a poll, so it shows numbers. Shares and a turnout, not
+  // two raw scores: the event is co-hosted, and a bare scoreline puts one of
+  // the two host orgs on their own homepage losing.
+  it('shows each side its share, and the turnout', async () => {
     fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
     setup()
-    await waitFor(() => expect(screen.getByTestId('tug-utmist')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('75%')).toBeInTheDocument())
+    expect(screen.getByText('25%')).toBeInTheDocument()
+    expect(screen.getByText(/100 votes/)).toBeInTheDocument()
+  })
+
+  it('does not print the two sides as raw scores', async () => {
+    fetchTally.mockResolvedValue({ utmist: 75, watai: 25 })
+    setup()
+    await waitFor(() => expect(screen.getByText('75%')).toBeInTheDocument())
     expect(screen.queryByText('75')).toBeNull()
     expect(screen.queryByText('25')).toBeNull()
+  })
+
+  it('invites the first vote instead of showing a hollow 50/50', async () => {
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0 })
+    setup()
+    await waitFor(() => expect(screen.getByText(/no votes yet/i)).toBeInTheDocument())
+    expect(screen.queryByText('50%')).toBeNull()
+  })
+
+  // The floor is a visual courtesy for the bar. The number must stay honest.
+  it('reports the true share even when the bar is floored', async () => {
+    fetchTally.mockResolvedValue({ utmist: 1000, watai: 1 })
+    setup()
+    await waitFor(() => expect(screen.getByText('100%')).toBeInTheDocument())
+    const width = parseFloat(screen.getByTestId('tug-utmist').style.width)
+    expect(width).toBeLessThanOrEqual(90)
+  })
+
+  it('says vote, not votes, for a single vote', async () => {
+    fetchTally.mockResolvedValue({ utmist: 1, watai: 0 })
+    setup()
+    await waitFor(() => expect(screen.getByText(/1 vote$/)).toBeInTheDocument())
   })
 
   it('exposes the split to assistive technology', async () => {

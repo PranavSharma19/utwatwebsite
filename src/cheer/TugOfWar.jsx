@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { fetchTally, subscribeTally } from './cheerClient'
 import { factionLabel } from '../theme/tokens'
 
-/** Neither side ever drops below this, so the bar reads as contested
- *  territory rather than a scoreline. */
+/** Neither side's *bar* ever drops below this, so a lopsided split still reads
+ *  as contested territory. The percentages shown are the true ones — only the
+ *  fill is floored, never the number. */
 const FLOOR = 10
+
+function pct(n) {
+  return `${Math.round(n)}%`
+}
 
 export default function TugOfWar() {
   const [tally, setTally] = useState({ utmist: 0, watai: 0 })
@@ -20,22 +25,57 @@ export default function TugOfWar() {
   }, [])
 
   const total = tally.utmist + tally.watai
-  const raw = total === 0 ? 50 : (tally.utmist / total) * 100
+  const empty = total === 0
+  const raw = empty ? 50 : (tally.utmist / total) * 100
   const share = Math.min(100 - FLOOR, Math.max(FLOOR, raw))
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-2 flex justify-between font-mono text-[10px] uppercase tracking-[.24em]">
-        <span className="text-signal">{factionLabel.utmist}</span>
-        <span className="text-waterloo">{factionLabel.watai}</span>
+      {/*
+        The numbers are what make this read as a poll rather than as decoration.
+        They are percentages plus a total rather than two raw scores: the event
+        is co-hosted, so a bare scoreline puts one of the two host orgs on their
+        own homepage losing. A share and a turnout say the same thing without
+        printing a defeat.
+      */}
+      <div className="mb-2 flex items-end justify-between gap-4">
+        <div className="text-left">
+          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-signal">
+            {factionLabel.utmist}
+          </div>
+          <div className="font-display text-2xl font-bold leading-none text-signal sm:text-3xl">
+            {empty ? '—' : pct(raw)}
+          </div>
+        </div>
+
+        <div className="pb-1 text-center font-mono text-[10px] uppercase tracking-[.2em] text-muted">
+          {empty
+            ? 'No votes yet — be the first'
+            : `${total.toLocaleString()} ${total === 1 ? 'vote' : 'votes'}`}
+        </div>
+
+        <div className="text-right">
+          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-waterloo">
+            {factionLabel.watai}
+          </div>
+          <div className="font-display text-2xl font-bold leading-none text-waterloo sm:text-3xl">
+            {empty ? '—' : pct(100 - raw)}
+          </div>
+        </div>
       </div>
+
       <div
         role="meter"
         aria-valuenow={Math.round(raw)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Share of cheers for UTMIST versus WAT.ai"
-        className="flex h-3 w-full overflow-hidden rounded-full border border-signal/60"
+        aria-valuetext={
+          empty
+            ? 'No votes yet'
+            : `${factionLabel.utmist} ${pct(raw)}, ${factionLabel.watai} ${pct(100 - raw)}, ${total} votes`
+        }
+        aria-label="Share of votes for UTMIST versus WAT.ai"
+        className="flex h-4 w-full overflow-hidden rounded-full border border-signal/60"
       >
         <div
           data-testid="tug-utmist"

@@ -7,8 +7,9 @@ import steelLogo from "../assets/steel-logo.svg";
 /**
  * Single source of truth for the sponsor wall.
  *
- * Listed alphabetically on purpose: the wall is flat, so ordering carries no
- * ranking. Keep it that way unless we deliberately move to tiers.
+ * The wall is flat, so ordering carries no ranking — it is a running order,
+ * not a hierarchy. It was alphabetical until Accenture and Shopify were
+ * swapped by request.
  *
  * `logoScale` is an optical correction, not a size. Every mark is rendered at
  * the same cap height, but a wide wordmark (Accenture) and a compact one
@@ -20,10 +21,10 @@ import steelLogo from "../assets/steel-logo.svg";
  */
 export const sponsors = [
   {
-    name: "Accenture",
-    logo: accentureLogo,
-    url: "https://www.accenture.com",
-    logoScale: 1,
+    name: "Shopify",
+    logo: shopifyLogo,
+    url: "https://www.shopify.com",
+    logoScale: 0.92,
   },
   {
     name: "BracketBot",
@@ -38,10 +39,10 @@ export const sponsors = [
     logoScale: 1,
   },
   {
-    name: "Shopify",
-    logo: shopifyLogo,
-    url: "https://www.shopify.com",
-    logoScale: 0.92,
+    name: "Accenture",
+    logo: accentureLogo,
+    url: "https://www.accenture.com",
+    logoScale: 1,
   },
   {
     name: "Steel",

@@ -25,7 +25,7 @@ export default function Sponsors() {
         </div>
 
         {/* Sponsor Banner Box */}
-        <div className="border border-signal/15 bg-panel/80 rounded-3xl p-8 sm:p-12">
+        <div className="border border-signal/15 bg-surface/80 rounded-3xl p-8 sm:p-12">
           {/* Flat wall - every sponsor gets the same footprint. `justify-center`
               centers the final short row rather than leaving a hole in a grid. */}
           <ul className="flex flex-wrap justify-center gap-4 sm:gap-6 list-none p-0 m-0">

@@ -32,6 +32,14 @@ body {
 [data-faction="utmist"] { --accent-rgb: 139 167 218; --accent-ink-rgb: 10 12 20; }
 [data-faction="watai"]  { --accent-rgb: 253 213 79;  --accent-ink-rgb: 10 12 20; }
 
+/* Section panels follow the chosen side too, not just the accents. Neutral and
+   UTMIST share the navy; WAT.ai gets the warm olive already used on its faction
+   panel. Both land within 0.04 of each other for presence against the void
+   (1.62:1 vs 1.58:1), so neither state reads heavier than the other. */
+:root                   { --surface-rgb: 36 64 111; }
+[data-faction="utmist"] { --surface-rgb: 36 64 111; }
+[data-faction="watai"]  { --surface-rgb: 71 62 35; }
+
 :root {
   --accent: rgb(var(--accent-rgb));
   --accent-ink: rgb(var(--accent-ink-rgb));
