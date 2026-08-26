@@ -2,6 +2,11 @@ import { useRef, useState } from 'react';
 import { Mail, Send } from 'lucide-react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import {
+  clearCapturedAuthError,
+  describeAuthError,
+  getCapturedAuthError,
+} from './authError';
 
 // .trim() strips stray whitespace / BOM that env tooling can prepend, which
 // would otherwise make Cloudflare reject the sitekey as malformed.
@@ -15,6 +20,11 @@ export default function AuthPanel({ redirectPath = '/apply' }) {
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaError, setCaptchaError] = useState('');
   const turnstileRef = useRef(null);
+  // Captured in main.jsx before supabase-js wiped the fragment. Someone who
+  // arrives from a dead magic link needs to be told that is what happened;
+  // otherwise the page looks like an ordinary sign-in prompt they already
+  // completed.
+  const [linkFailure, setLinkFailure] = useState(() => getCapturedAuthError());
 
   // The widget only renders when a site key is configured, so local/dev
   // builds without the key keep working (Supabase captcha must be off then).
@@ -29,6 +39,9 @@ export default function AuthPanel({ redirectPath = '/apply' }) {
     event.preventDefault();
     setError('');
     setStatus('');
+    // They are acting on the advice in the notice, so retire it.
+    setLinkFailure(null);
+    clearCapturedAuthError();
 
     if (!isSupabaseConfigured) {
       setError(
@@ -78,6 +91,21 @@ export default function AuthPanel({ redirectPath = '/apply' }) {
           Enter the email you want tied to your application. We will send a
           passwordless link, then bring you back here to continue.
         </p>
+
+        {linkFailure && (
+          <div
+            role="alert"
+            data-testid="auth-link-failure"
+            className="mt-6 rounded-xl border border-amber-400/25 bg-amber-950/20 px-4 py-3 text-left"
+          >
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-amber-300">
+              {describeAuthError(linkFailure).title}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-100/90">
+              {describeAuthError(linkFailure).detail}
+            </p>
+          </div>
+        )}
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
