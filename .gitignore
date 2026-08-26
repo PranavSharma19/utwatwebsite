@@ -27,3 +27,7 @@ dist-ssr
 
 # Brainstorming mockups
 .superpowers/
+
+# Temporary source logos. The converted marks live in src/assets/;
+# these are the originals they were traced and keyed from.
+icons/
