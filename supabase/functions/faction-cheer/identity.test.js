@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   createRateLimiter,
   extractIp,
+  isAllowedHostname,
   isIpAddress,
   normalizeIp,
+  parseList,
   RATE_LIMIT_MAX_REQUESTS,
+  resolveAllowedOrigin,
 } from './identity.ts'
 
 /**
@@ -187,5 +190,84 @@ describe('rate limiter', () => {
     clock += 60_001
     limiter.check('trigger')
     expect(limiter.size()).toBe(1)
+  })
+})
+
+/**
+ * The site answers on two addresses -- utwat.ca and www.utwat.ca -- and both
+ * of these were single-valued, so whichever one was not configured got a
+ * CORS-blocked tally and a captcha whose hostname never matched. Both fail
+ * silently: the client swallows errors, so the symptom is a poll that simply
+ * never counts anyone arriving on the wrong host.
+ */
+const SITE = ['https://utwat.ca', 'https://www.utwat.ca']
+
+describe('parseList', () => {
+  it('splits, trims, and drops the gaps', () => {
+    expect(parseList('https://a.ca, https://b.ca')).toEqual(['https://a.ca', 'https://b.ca'])
+    expect(parseList('  https://a.ca ,, https://b.ca ,')).toEqual(['https://a.ca', 'https://b.ca'])
+  })
+
+  it('treats unset, empty and whitespace as no entries', () => {
+    for (const v of [undefined, '', '   ', ',,,']) expect(parseList(v)).toEqual([])
+  })
+
+  it('leaves a single value working exactly as before', () => {
+    expect(parseList('https://utwat.ca')).toEqual(['https://utwat.ca'])
+  })
+})
+
+describe('resolveAllowedOrigin', () => {
+  // The header carries exactly one origin, so an allowlist has to echo the
+  // caller's rather than joining the list.
+  it('echoes whichever allowed origin is calling', () => {
+    expect(resolveAllowedOrigin('https://utwat.ca', SITE)).toBe('https://utwat.ca')
+    expect(resolveAllowedOrigin('https://www.utwat.ca', SITE)).toBe('https://www.utwat.ca')
+  })
+
+  it('does not echo an origin that is not on the list', () => {
+    expect(resolveAllowedOrigin('https://evil.example', SITE)).not.toBe('https://evil.example')
+  })
+
+  it('falls back to the first entry for a caller that sends no origin', () => {
+    // curl and other non-browser callers; they ignore the header anyway.
+    expect(resolveAllowedOrigin(null, SITE)).toBe('https://utwat.ca')
+  })
+
+  it('returns null when nothing is configured, so the caller can refuse', () => {
+    expect(resolveAllowedOrigin('https://utwat.ca', [])).toBeNull()
+    expect(resolveAllowedOrigin(null, [])).toBeNull()
+  })
+
+  it('is exact: a subdomain or scheme mismatch is not a match', () => {
+    expect(resolveAllowedOrigin('http://utwat.ca', SITE)).not.toBe('http://utwat.ca')
+    expect(resolveAllowedOrigin('https://utwat.ca.evil.example', SITE))
+      .not.toBe('https://utwat.ca.evil.example')
+  })
+})
+
+describe('isAllowedHostname', () => {
+  const HOSTS = ['utwat.ca', 'www.utwat.ca']
+
+  it('accepts every host the site actually serves', () => {
+    for (const h of HOSTS) expect(isAllowedHostname(h, HOSTS)).toBe(true)
+  })
+
+  it('rejects anything else', () => {
+    expect(isAllowedHostname('evil.example', HOSTS)).toBe(false)
+    expect(isAllowedHostname('utwat.ca.evil.example', HOSTS)).toBe(false)
+  })
+
+  // Turnstile's response shape is not ours to trust.
+  it('rejects a missing or non-string hostname', () => {
+    for (const v of [undefined, null, 42, {}, []]) {
+      expect(isAllowedHostname(v, HOSTS)).toBe(false)
+    }
+  })
+
+  // Fails closed: an unconfigured allowlist must not accept a token solved
+  // on someone else's page that merely embeds our public sitekey.
+  it('accepts nothing when the allowlist is empty', () => {
+    expect(isAllowedHostname('utwat.ca', [])).toBe(false)
   })
 })

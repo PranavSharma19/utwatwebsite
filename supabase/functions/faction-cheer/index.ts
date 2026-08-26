@@ -7,8 +7,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.2'
 import {
   createRateLimiter,
   extractIp,
+  isAllowedHostname,
   isIpAddress,
   normalizeIp,
+  parseList,
+  resolveAllowedOrigin,
 } from './identity.ts'
 
 const FACTIONS = ['utmist', 'watai'] as const
@@ -21,14 +24,16 @@ function isFaction(value: unknown): value is Faction {
 // Fail closed, not open: with no configured origin, POST is refused (see the
 // method handler below) rather than left reachable from any page on the web.
 // GET stays permissive since it only ever returns an aggregate tally.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN')
+const ALLOWED_ORIGINS = parseList(Deno.env.get('ALLOWED_ORIGIN'))
 
 // Sitekeys are public by construction (they ship in the page), so a token
 // that verifies with Cloudflare only proves it was solved for *some* site
 // using this sitekey — not this one. TURNSTILE_EXPECTED_HOSTNAME closes that
 // replay path; like ALLOWED_ORIGIN, an unset value fails closed rather than
 // silently accepting tokens solved on someone else's page.
-const TURNSTILE_EXPECTED_HOSTNAME = Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME')
+const TURNSTILE_EXPECTED_HOSTNAMES = parseList(
+  Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME'),
+)
 
 // Also fails closed, and for a sharper reason than its siblings. An unset
 // salt does not break anything visibly: visitor_hash simply degrades to
@@ -38,24 +43,31 @@ const TURNSTILE_EXPECTED_HOSTNAME = Deno.env.get('TURNSTILE_EXPECTED_HOSTNAME')
 // only safe reading of "no salt configured".
 const CHEER_HASH_SALT = Deno.env.get('CHEER_HASH_SALT')
 
-const CORS = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN ?? '*',
-  // Matches supabase/functions/admin-applications/index.ts so a client using
-  // supabase-js's `functions.invoke` (which sends apikey + x-client-info)
-  // doesn't fail preflight here.
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+function corsFor(req: Request): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin':
+      resolveAllowedOrigin(req.headers.get('origin'), ALLOWED_ORIGINS) ?? '*',
+    // Responses differ by request origin now. Without this a shared cache can
+    // serve one origin's header to another and undo the allowlist entirely.
+    Vary: 'Origin',
+    // Matches supabase/functions/admin-applications/index.ts so a client
+    // using supabase-js's `functions.invoke` (which sends apikey +
+    // x-client-info) doesn't fail preflight here.
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
 }
 
 const json = (
+  cors: Record<string, string>,
   body: unknown,
   status = 200,
   extraHeaders: Record<string, string> = {},
 ) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, ...extraHeaders, 'Content-Type': 'application/json' },
+    headers: { ...cors, ...extraHeaders, 'Content-Type': 'application/json' },
   })
 
 // One window per isolate; see createRateLimiter's contract.
@@ -96,8 +108,7 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
 
   // Fail closed: without a configured expected hostname we cannot rule out a
   // token harvested on a page that merely embeds our public sitekey.
-  if (!TURNSTILE_EXPECTED_HOSTNAME) return false
-  return result.hostname === TURNSTILE_EXPECTED_HOSTNAME
+  return isAllowedHostname(result.hostname, TURNSTILE_EXPECTED_HOSTNAMES)
 }
 
 async function tally(): Promise<Record<Faction, number>> {
@@ -119,7 +130,8 @@ async function tally(): Promise<Record<Faction, number>> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  const cors = corsFor(req)
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   // Identity comes ONLY from request headers plus the server-held salt, never
   // from the request body — anything the client sends in the body can be
@@ -127,12 +139,12 @@ Deno.serve(async (req) => {
   const ip = extractIp(req.headers)
 
   try {
-    if (req.method === 'GET') return json(await tally())
+    if (req.method === 'GET') return json(cors, await tally())
 
-    if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
+    if (req.method !== 'POST') return json(cors, { error: 'method not allowed' }, 405)
 
-    if (!ALLOWED_ORIGIN || !CHEER_HASH_SALT) {
-      return json({ error: 'cheer submission is not configured' }, 503)
+    if (ALLOWED_ORIGINS.length === 0 || !CHEER_HASH_SALT) {
+      return json(cors, { error: 'cheer submission is not configured' }, 503)
     }
 
     const normalizedIp = normalizeIp(ip)
@@ -140,6 +152,7 @@ Deno.serve(async (req) => {
     const rateLimit = rateLimiter.check(normalizedIp)
     if (!rateLimit.allowed) {
       return json(
+        cors,
         { error: 'too many requests' },
         429,
         { 'Retry-After': String(rateLimit.retryAfterSeconds) },
@@ -150,19 +163,19 @@ Deno.serve(async (req) => {
     try {
       payload = await req.json()
     } catch {
-      return json({ error: 'invalid body' }, 400)
+      return json(cors, { error: 'invalid body' }, 400)
     }
     if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
-      return json({ error: 'invalid body' }, 400)
+      return json(cors, { error: 'invalid body' }, 400)
     }
 
     const { faction, turnstileToken } = payload as Record<string, unknown>
 
-    if (!isFaction(faction)) return json({ error: 'unknown faction' }, 400)
+    if (!isFaction(faction)) return json(cors, { error: 'unknown faction' }, 400)
     if (typeof turnstileToken !== 'string' || !turnstileToken)
-      return json({ error: 'captcha required' }, 400)
+      return json(cors, { error: 'captcha required' }, 400)
     if (!(await verifyTurnstile(turnstileToken, ip)))
-      return json({ error: 'captcha failed' }, 403)
+      return json(cors, { error: 'captcha failed' }, 403)
 
     // visitor_hash is derived solely from `normalizedIp` (header-sourced,
     // above) and the CHEER_HASH_SALT secret. `faction` and `turnstileToken`
@@ -176,9 +189,9 @@ Deno.serve(async (req) => {
 
     if (error && error.code !== '23505') throw error
 
-    return json(await tally())
+    return json(cors, await tally())
   } catch (err) {
     console.error('faction-cheer failed', err)
-    return json({ error: 'internal error' }, 500)
+    return json(cors, { error: 'internal error' }, 500)
   }
 })

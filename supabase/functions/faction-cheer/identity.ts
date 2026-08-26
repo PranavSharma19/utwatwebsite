@@ -161,3 +161,40 @@ export function createRateLimiter({
     size: () => hitsByIp.size,
   }
 }
+
+// --- Origin / hostname allowlists ---------------------------------------
+//
+// Both of these were single values, which quietly assumed the site has
+// exactly one address. It does not: Vercel serves utwat.ca and
+// www.utwat.ca, and a visitor on the wrong one got a CORS-blocked tally and
+// a captcha whose hostname never matched -- both failing silently, since the
+// client swallows errors by contract.
+
+/** Splits a comma-separated env value; tolerates spaces and trailing commas. */
+export function parseList(value: string | undefined): string[] {
+  return (value ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+}
+
+/**
+ * The value for Access-Control-Allow-Origin. Echoes the caller's origin when
+ * it is allowed -- the header takes exactly one origin, so a list cannot just
+ * be joined. Falls back to the first configured origin so a non-browser
+ * caller (no Origin header) still gets a well-formed response, and to null
+ * when nothing is configured, which is the caller's cue to refuse.
+ *
+ * Any response built from this MUST also send `Vary: Origin`, or a cache can
+ * hand one origin's header to another and reintroduce the bug it fixes.
+ */
+export function resolveAllowedOrigin(
+  requestOrigin: string | null,
+  allowed: string[],
+): string | null {
+  if (allowed.length === 0) return null
+  if (requestOrigin && allowed.includes(requestOrigin)) return requestOrigin
+  return allowed[0]
+}
+
+/** Fails closed: an empty allowlist accepts no hostname at all. */
+export function isAllowedHostname(hostname: unknown, allowed: string[]): boolean {
+  return typeof hostname === 'string' && allowed.includes(hostname)
+}
