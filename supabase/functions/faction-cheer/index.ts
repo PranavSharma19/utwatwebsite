@@ -4,6 +4,12 @@
 // the client sends can be forged), and returns aggregate counts only.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.2'
+import {
+  createRateLimiter,
+  extractIp,
+  isIpAddress,
+  normalizeIp,
+} from './identity.ts'
 
 const FACTIONS = ['utmist', 'watai'] as const
 type Faction = (typeof FACTIONS)[number]
@@ -52,138 +58,13 @@ const json = (
     headers: { ...CORS, ...extraHeaders, 'Content-Type': 'application/json' },
   })
 
+// One window per isolate; see createRateLimiter's contract.
+const rateLimiter = createRateLimiter()
+
 const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
-
-// --- IP extraction -----------------------------------------------------
-//
-// `x-forwarded-for` is a client-appendable list: each proxy hop *appends* the
-// peer it received the request from, so the list reads
-// `<client-asserted>, <hop1>, <hop2>, ...`. The LEFTMOST entry is whatever the
-// client chose to send and is trivially forgeable (`X-Forwarded-For:
-// 203.0.113.<random>` on every request). The rightmost entry is the peer our
-// own edge/proxy layer observed directly, which the client cannot set.
-// `cf-connecting-ip`, where present, is written by Cloudflare's edge itself
-// and is stronger still, so it is preferred outright.
-function extractIp(req: Request): string {
-  const xff =
-    req.headers
-      .get('x-forwarded-for')
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? []
-  // `||`, not `??`: an XFF header that is present but empty parses to an
-  // empty array, so `xff[xff.length - 1]` is `undefined`, not `''` — but a
-  // stray empty *string* anywhere in this chain must still fall through
-  // rather than being treated as a truthy-but-blank identity.
-  return req.headers.get('cf-connecting-ip')?.trim() || xff[xff.length - 1] || 'unknown'
-}
-
-// Normalizes an IPv6 address down to its /64 network prefix so that a single
-// household (which typically gets a /64 or larger from its ISP) is one
-// voter, and so RFC 4941 privacy-extension address rotation within that
-// prefix doesn't mint new identities. IPv4 addresses (and the 'unknown'
-// fallback) pass through unchanged.
-//
-// IPv4-mapped and IPv4-compatible forms (`::ffff:a.b.c.d`, `::a.b.c.d`) MUST
-// be pulled out before the `::` expander runs, and this is not a nicety. The
-// expander inserts the synthesized zero groups ahead of the tail, so the
-// first four groups of any `::`-prefixed address are all zeros and
-// `slice(0, 4)` collapses the entire class into one string:
-//
-//   ::ffff:203.0.113.5  ->  0000:0000:0000:0000
-//   ::ffff:8.8.8.8      ->  0000:0000:0000:0000
-//   ::1                 ->  0000:0000:0000:0000
-//
-// That is a single shared dedup identity AND a single shared 5-req/min
-// rate-limit bucket for every client reaching us over an IPv4-mapped socket
-// — i.e. one cheer per day for all of them, and one of them can rate-limit
-// the rest. Returning the embedded dotted quad puts them back on the same
-// footing as a plain IPv4 peer.
-function normalizeIp(ip: string): string {
-  const trimmed = ip.trim()
-  if (!trimmed.includes(':')) return trimmed // IPv4, or 'unknown'
-
-  const withoutZone = trimmed.split('%')[0]
-
-  const last = withoutZone.split(':').pop()
-  if (last?.includes('.')) return last
-  const halves = withoutZone.split('::')
-  let head: string[]
-  let tail: string[]
-  if (halves.length === 2) {
-    head = halves[0] ? halves[0].split(':') : []
-    tail = halves[1] ? halves[1].split(':') : []
-  } else {
-    head = withoutZone.split(':')
-    tail = []
-  }
-  const missing = Math.max(0, 8 - head.length - tail.length)
-  const groups = [...head, ...Array(missing).fill('0'), ...tail]
-  return groups
-    .slice(0, 4)
-    .map((g) => g.padStart(4, '0'))
-    .join(':')
-}
-
-// --- Per-IP rate limiting -----------------------------------------------
-//
-// In-memory sliding window keyed on the corrected+normalized IP. This is
-// per-isolate, not global, which is an accepted limitation for a public vote
-// counter; it still blunts single-origin bursts, and it must run on the
-// corrected IP or it limits nobody (a forgeable IP makes each "identity"
-// disposable).
-const RATE_LIMIT_WINDOW_MS = 60_000
-const RATE_LIMIT_MAX_REQUESTS = 5
-const rateLimitHits = new Map<string, number[]>()
-
-// Bound on rateLimitHits' size. This is a public, unauthenticated endpoint,
-// so the map gains roughly one entry per distinct IP seen, and nothing ever
-// touches the entry for an IP that doesn't call back -- left alone that is
-// an unbounded, slow memory leak in a long-lived isolate (and would make the
-// limiter itself the resource an attacker exhausts). Past this many distinct
-// keys, a full sweep drops every entry that has entirely aged out of the
-// window. It's O(map size), but it only runs once the map is actually large,
-// so no setInterval-based reaper is needed.
-const RATE_LIMIT_MAP_SWEEP_THRESHOLD = 10_000
-
-// Filters one IP's hit timestamps down to the current window and writes the
-// result back -- deleting the key outright when nothing survives, rather
-// than leaving an empty array resident forever (the common case for a
-// one-off visitor).
-function pruneHits(ip: string, now: number): number[] {
-  const windowStart = now - RATE_LIMIT_WINDOW_MS
-  const filtered = (rateLimitHits.get(ip) ?? []).filter((t) => t > windowStart)
-  if (filtered.length === 0) {
-    rateLimitHits.delete(ip)
-  } else {
-    rateLimitHits.set(ip, filtered)
-  }
-  return filtered
-}
-
-function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
-  const now = Date.now()
-
-  if (rateLimitHits.size > RATE_LIMIT_MAP_SWEEP_THRESHOLD) {
-    for (const key of [...rateLimitHits.keys()]) {
-      pruneHits(key, now)
-    }
-  }
-
-  const hits = pruneHits(ip, now)
-
-  if (hits.length >= RATE_LIMIT_MAX_REQUESTS) {
-    const retryAfterMs = hits[0] + RATE_LIMIT_WINDOW_MS - now
-    return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) }
-  }
-
-  hits.push(now)
-  rateLimitHits.set(ip, hits)
-  return { allowed: true, retryAfterSeconds: 0 }
-}
 
 async function hashVisitor(normalizedIp: string): Promise<string> {
   // Salt rotates daily so the hash is not a durable identifier. Combined with
@@ -196,18 +77,6 @@ async function hashVisitor(normalizedIp: string): Promise<string> {
   const data = new TextEncoder().encode(`${normalizedIp}|${day}|${CHEER_HASH_SALT}`)
   const digest = await crypto.subtle.digest('SHA-256', data)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-// extractIp falls back to the literal 'unknown' when no usable header is
-// present. Cloudflare rejects a siteverify call whose `remoteip` is not a
-// valid address, which would turn every cheer from such a client into
-// `captcha failed` — a hard failure caused by a missing header rather than a
-// failed challenge. `remoteip` is optional, so the field is simply omitted
-// when we don't have an address to put in it.
-const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/
-function isIpAddress(value: string): boolean {
-  if (IPV4.test(value)) return value.split('.').every((o) => Number(o) <= 255)
-  return value.includes(':') && /^[0-9a-fA-F:.]+$/.test(value)
 }
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
@@ -255,7 +124,7 @@ Deno.serve(async (req) => {
   // Identity comes ONLY from request headers plus the server-held salt, never
   // from the request body — anything the client sends in the body can be
   // forged and must never influence visitor_hash.
-  const ip = extractIp(req)
+  const ip = extractIp(req.headers)
 
   try {
     if (req.method === 'GET') return json(await tally())
@@ -268,7 +137,7 @@ Deno.serve(async (req) => {
 
     const normalizedIp = normalizeIp(ip)
 
-    const rateLimit = checkRateLimit(normalizedIp)
+    const rateLimit = rateLimiter.check(normalizedIp)
     if (!rateLimit.allowed) {
       return json(
         { error: 'too many requests' },
