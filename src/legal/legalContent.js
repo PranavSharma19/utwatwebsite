@@ -32,7 +32,7 @@ export const privacyPolicy = {
     {
       heading: 'What we collect',
       paragraphs: [
-        'If you only browse the site, we do not ask you for anything. Two things are stored in your own browser and never sent to us: which school you picked in the poll, and whether you have already seen the opening animation. You can clear both by clearing site data.',
+        'If you only browse the site, we do not ask you for anything. One thing is stored in your own browser and never sent to us: which school you picked in the poll, so the page can remember your side. You can clear it by clearing site data.',
         'If you apply, you give us the following, all of it directly from the form:',
       ],
       bullets: [

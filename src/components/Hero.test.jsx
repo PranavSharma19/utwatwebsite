@@ -10,11 +10,6 @@ import Hero from './Hero'
 vi.mock('../cheer/TugOfWar', () => ({ default: () => null }))
 
 
-// Byte-exact, approved crawl copy — see task-10a-brief.md. Do not reword,
-// re-punctuate, or "improve" this string. The dash is an em dash (U+2014).
-const CRAWL_COPY =
-  'Toronto and Waterloo. Thirty-six hours, one weekend, and whichever school scores highest across all of its teams takes the Maple Cup.'
-
 function mockReducedMotion(reduce) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
     matches: query.includes('prefers-reduced-motion') ? reduce : false,
@@ -30,13 +25,26 @@ describe('Hero', () => {
     window.localStorage.clear()
   })
 
-  it('renders the approved crawl copy verbatim, byte-exact', () => {
+  /**
+   * The regression this exists for: the hero opened with a 6.5s crawl and
+   * mounted nothing else until its animation ended. Everything below --
+   * including the hand and the whole poll -- was unreachable until then, and
+   * on a browser that pauses animations in a background tab it never arrived
+   * at all. Motion is *allowed* here on purpose: that was the failing case,
+   * since the reduced-motion path already resolved immediately.
+   */
+  it('renders its content on the first paint, with motion allowed', () => {
     mockReducedMotion(false)
     setup()
-    expect(screen.getByText(CRAWL_COPY)).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /battle of the schools/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /vote uoft/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /vote waterloo/i })).toBeInTheDocument()
+    expect(screen.getByAltText('')).toBeInTheDocument()
   })
 
-  it('advances past the crawl immediately under prefers-reduced-motion, with no interaction', () => {
+  it('renders the same content under prefers-reduced-motion', () => {
     mockReducedMotion(true)
     setup()
     expect(
@@ -44,6 +52,14 @@ describe('Hero', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /vote uoft/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /vote waterloo/i })).toBeInTheDocument()
+  })
+
+  // Nothing may reintroduce a gate: no skip control, and no leftover stage.
+  it('has no intro to skip', () => {
+    mockReducedMotion(false)
+    const { container } = setup()
+    expect(screen.queryByRole('button', { name: /skip/i })).toBeNull()
+    expect(container.querySelector('.crawl-stage')).toBeNull()
   })
 
   it('offers a functional faction choice once the intro has resolved', async () => {

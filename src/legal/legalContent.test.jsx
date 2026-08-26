@@ -72,7 +72,7 @@ describe('privacy policy accuracy', () => {
   });
 
   it('covers the browser storage the site sets', () => {
-    // factionStorage writes localStorage; Crawl writes sessionStorage.
+    // factionStorage is the only thing this site writes to the browser.
     expect(text).toMatch(/browser/);
     expect(text).toMatch(/clear/);
   });

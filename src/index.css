@@ -116,55 +116,6 @@ body {
   .starfield-layer { transform: none !important; }
 }
 
-/* Opening crawl — see src/components/Crawl.jsx */
-.crawl-stage {
-  position: relative;
-  height: 62vh;
-  perspective: 340px;
-  overflow: hidden;
-  mask-image: linear-gradient(to top, transparent 4%, #000 34%, #000 72%, transparent 96%);
-}
-.crawl-track {
-  position: absolute;
-  inset: 0 auto auto 50%;
-  width: min(680px, 84vw);
-  transform-origin: 50% 100%;
-  transform: translateX(-50%) rotateX(52deg);
-  animation: crawl 6.5s linear forwards;
-}
-.crawl-copy {
-  color: #FDD54F;
-  font-size: clamp(20px, 3.2vw, 34px);
-  font-weight: 700;
-  line-height: 1.45;
-  letter-spacing: .01em;
-  text-align: justify;
-}
-@keyframes crawl {
-  from { top: 100%; }
-  to   { top: -180%; }
-}
-.crawl-skip {
-  position: absolute;
-  right: 16px; bottom: 12px;
-  padding: 8px 14px;
-  /* Was rgba(...,.25) at 1px — a dim hairline nobody found. This control is
-     the escape hatch from a timed animation, so it has to be visible. */
-  border: 1px solid rgb(var(--accent-rgb) / .55);
-  border-radius: 3px;
-  background: rgb(var(--accent-rgb) / .08);
-  cursor: pointer;
-  transition: background .2s ease, border-color .2s ease;
-}
-.crawl-skip:hover {
-  background: rgb(var(--accent-rgb) / .18);
-  border-color: rgb(var(--accent-rgb) / .9);
-}
-@media (prefers-reduced-motion: reduce) {
-  .crawl-track { animation: none; top: 20%; transform: translateX(-50%); }
-  .crawl-stage { perspective: none; mask-image: none; height: auto; }
-}
-
 /* Cursor glow — see src/faction/CursorGlow.jsx. Never replaces the native cursor. */
 .cursor-glow {
   position: fixed;
