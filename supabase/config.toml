@@ -10,9 +10,11 @@
 # bar would read 0/0 forever with no error surfaced anywhere.
 #
 # What actually guards this endpoint is inside the function: a Turnstile token
-# verified against TURNSTILE_EXPECTED_HOSTNAME, a per-IP rate limit, and a
-# unique index on (visitor_hash, day). The project apikey is still required by
-# the gateway; cheerClient.js sends it.
+# verified against TURNSTILE_EXPECTED_HOSTNAME and a per-IP flood limit. There
+# is deliberately no server-side dedup any more -- the unique index on
+# visitor_hash meant one vote per IP per day, which behind NAT silently
+# discarded everyone after the first person in a household or a lecture hall.
+# The project apikey is still required by the gateway; cheerClient.js sends it.
 verify_jwt = false
 
 [functions.admin-applications]
