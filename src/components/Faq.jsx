@@ -32,7 +32,7 @@ export default function Faq() {
   };
 
   return (
-    <section className="py-24 relative overflow-hidden bg-panel/80" id="faq">
+    <section className="py-24 relative overflow-hidden" id="faq">
       <div className="mx-auto max-w-3xl px-gutter relative z-10">
 
         <div className="text-center mb-16 space-y-4">
