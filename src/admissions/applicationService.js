@@ -98,7 +98,8 @@ export async function uploadResume(file, turnstileToken) {
  * behind it: this is the single write, and it is final.
  *
  * Resolves to `{ id, status, status_token, submitted_at }`. The status_token
- * is what replaces "sign in to check your status" -- it is the only way back
+ * is what replaces "sign in to check your status". The browser also keeps a
+ * copy, so this is what carries you back
  * to this application, so the caller must show it to the applicant rather
  * than only storing it.
  */

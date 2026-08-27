@@ -44,7 +44,7 @@ export default function ApplicationStatusPage() {
   return (
     <PortalShell
       eyebrow="Application Status"
-      subtitle="Bookmark this page. It is the only way back to your application."
+      subtitle="We will email your decision before the event. This page shows where things stand until then."
       title="Your Application"
     >
       {loading && (
