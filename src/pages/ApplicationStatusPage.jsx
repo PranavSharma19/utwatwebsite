@@ -129,7 +129,7 @@ export default function ApplicationStatusPage() {
 
           <p className="mt-8 text-sm leading-relaxed text-on-surface-variant">
             Decisions go out before the event on {portalConfig.eventDateRange}.
-            Check back here -- this page always shows the current state, whether
+            Check back here, this page always shows the current state, whether
             or not our email reaches you.
           </p>
         </div>
