@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import AdmissionsPage from './AdmissionsPage';
 import { emptyApplicationForm } from '../admissions/portalConfig';
-import { saveDraft } from '../admissions/draftStorage';
+import { saveDraft, saveSubmission } from '../admissions/draftStorage';
 
 vi.mock('@marsidev/react-turnstile', async () => {
   const { useEffect } = await import('react');
@@ -202,6 +202,25 @@ describe('submitting', () => {
     expect(
       await screen.findByText(/already exists for this email/i),
     ).toBeInTheDocument();
+  });
+
+  // PortalShell wraps both the form and the submitted panel, so a single fixed
+  // subtitle told people who had already applied to "fill this in and submit
+  // it" -- directly above the panel confirming they had.
+  it('stops telling you to fill in the form once you have submitted', () => {
+    saveSubmission({
+      statusToken: '11111111-1111-1111-1111-111111111111',
+      status: 'submitted',
+    });
+    setup();
+    expect(screen.queryByText(/fill this in and submit/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/thanks for applying/i)).toBeInTheDocument();
+  });
+
+  it('still explains how applying works before you have submitted', () => {
+    setup();
+    expect(screen.getByText(/fill this in and submit/i)).toBeInTheDocument();
+    expect(screen.queryByText(/thanks for applying/i)).not.toBeInTheDocument();
   });
 
   it('remembers a submission across a reload rather than offering a second try', async () => {

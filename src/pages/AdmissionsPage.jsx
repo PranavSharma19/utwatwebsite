@@ -91,10 +91,8 @@ function SubmittedPanel({ submission }) {
             Application Received
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-            You are in the pile for {portalConfig.eventName}{' '}
-            {portalConfig.eventYear}. We will email you your decision before the
-            event on {portalConfig.eventDateRange} -- you do not need to do
-            anything until then.
+            You're in the pile! We'll email you your decision before the event
+            on {portalConfig.eventDateRange}.
           </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
@@ -102,11 +100,9 @@ function SubmittedPanel({ submission }) {
               Check from another device
             </div>
             <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-              Nothing to keep track of: this browser remembers your application,
-              so you can just return to{' '}
-              <span className="text-white">utwat.ca/apply</span> any time. Copy
-              this link only if you want to check from your phone or another
-              computer.
+              This browser remembers your application, so returning to{' '}
+              <span className="text-white">utwat.ca/apply</span> opens it again.
+              Copy the link below to check your status on another device.
             </p>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <code className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-white">
@@ -337,8 +333,12 @@ export default function AdmissionsPage() {
 
   return (
     <PortalShell
-      subtitle="No account, no sign-in link, no waiting on email. Fill this in and submit it -- your answers stay in this browser until you do."
-      title="Apply to Battle of the Schools"
+      subtitle={
+        submission
+          ? 'Thanks for applying!'
+          : 'No account, no sign-in link, no waiting on email. Fill this in and submit it -- your answers stay in this browser until you do.'
+      }
+      title={submission ? 'Your Application' : 'Apply to Battle of the Schools'}
     >
       {!isSupabaseConfigured && <SetupNotice />}
 
