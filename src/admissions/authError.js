@@ -14,6 +14,7 @@
  * `#error=access_denied&error_code=otp_expired...` in the address bar and no
  * explanation anywhere on it.
  */
+import { portalConfig } from './portalConfig';
 
 /**
  * @param {string} hash  a location fragment, with or without the leading '#'
@@ -114,10 +115,10 @@ export function clearCapturedAuthError() {
  */
 export function authErrorLanding(pathname, error) {
   if (!error) return null;
-  // /apply/admin, not /apply. Applying stopped requiring a sign-in link --
-  // that is precisely what was failing here -- so the only magic link this
+  // The admin console, not /apply. Applying stopped requiring a sign-in link
+  // -- that is precisely what was failing here -- so the only magic link this
   // site still sends is the organizers' one, and dropping a dead-link notice
   // on the applicant page would explain an error to people who can no longer
   // encounter it.
-  return pathname === '/' ? '/apply/admin' : null;
+  return pathname === '/' ? portalConfig.adminPath : null;
 }

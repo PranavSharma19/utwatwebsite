@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { portalConfig } from './portalConfig';
 import {
   parseAuthError,
   describeAuthError,
@@ -111,12 +112,12 @@ describe('authErrorLanding', () => {
   // has nothing that can explain what went wrong. The destination is the admin
   // sign-in, because that is the only place a magic link still leads.
   it('forwards a failure that landed on the homepage to the admin sign-in', () => {
-    expect(authErrorLanding('/', err)).toBe('/apply/admin');
+    expect(authErrorLanding('/', err)).toBe(portalConfig.adminPath);
   });
 
   it('leaves a failure that already reached a portal page alone', () => {
     expect(authErrorLanding('/apply', err)).toBeNull();
-    expect(authErrorLanding('/apply/admin', err)).toBeNull();
+    expect(authErrorLanding(portalConfig.adminPath, err)).toBeNull();
   });
 
   it('never redirects an ordinary visit to the homepage', () => {

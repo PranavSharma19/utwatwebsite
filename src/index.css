@@ -137,7 +137,8 @@ body {
 }
 
 /*
- * Legacy — admissions portal only (`/apply`, `/apply/admin`).
+ * Legacy — admissions portal only (`/apply` and the admin console; see
+ * portalConfig.adminPath).
  *
  * These are the two class-based styles that src/pages/Admissions*.jsx and
  * src/admissions/** still depend on. They are out of scope for the Deep

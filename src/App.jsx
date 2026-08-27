@@ -7,6 +7,7 @@ import ApplicationStatusPage from './pages/ApplicationStatusPage';
 import LandingPage from './pages/LandingPage';
 import LegalPage from './pages/LegalPage';
 import { privacyPolicy, termsOfService } from './legal/legalContent';
+import { portalConfig } from './admissions/portalConfig';
 
 export default function App() {
   return (
@@ -20,7 +21,10 @@ export default function App() {
               and email cannot be relied on to reach applicants at either
               school. See src/pages/ApplicationStatusPage.jsx. */}
           <Route path="/apply/status/:token" element={<ApplicationStatusPage />} />
-          <Route path="/apply/admin" element={<AdmissionsAdminPage />} />
+          <Route
+            path={portalConfig.adminPath}
+            element={<AdmissionsAdminPage />}
+          />
           <Route path="/privacy" element={<LegalPage document={privacyPolicy} />} />
           <Route path="/terms" element={<LegalPage document={termsOfService} />} />
           <Route path="*" element={<Navigate to="/" replace />} />

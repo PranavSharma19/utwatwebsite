@@ -380,7 +380,7 @@ export default function AdmissionsAdminPage() {
       )}
 
       {configured && !loading && !user && (
-        <AuthPanel redirectPath="/apply/admin" />
+        <AuthPanel redirectPath={portalConfig.adminPath} />
       )}
 
       {configured && user && (

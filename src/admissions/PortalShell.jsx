@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { LogOut, Shield, Sparkles } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
 import { portalConfig } from './portalConfig';
 
 export default function PortalShell({
@@ -35,21 +35,17 @@ export default function PortalShell({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {admin ? (
+            {/* Only the admin-side shell links anywhere: an escape hatch back
+                to the applicant view. There is deliberately no link INTO the
+                console -- it was advertising the reviewer page to every
+                applicant, and the only person who needs it can bookmark it. */}
+            {admin && (
               <Link
                 to="/apply"
                 className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
               >
                 <Sparkles size={14} />
                 Applicant View
-              </Link>
-            ) : (
-              <Link
-                to="/apply/admin"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-on-surface-variant transition-colors hover:border-primary/30 hover:text-primary"
-              >
-                <Shield size={14} />
-                Admin
               </Link>
             )}
 

@@ -21,6 +21,12 @@ export const portalConfig = {
   resumeBucket: 'resumes',
   maxResumeBytes: 10 * 1024 * 1024,
   adminFunctionName: 'admin-applications',
+  // Deliberately not /apply/admin, and deliberately not linked from anywhere
+  // in the UI. This is NOT a security boundary: admin-applications checks the
+  // caller's JWT against ADMIN_EMAIL_ALLOWLIST and fails closed, and this
+  // string ships inside the JS bundle where anyone can grep it. It only keeps
+  // scanners and curious applicants off the console.
+  adminPath: '/ops/bots-triage-7f3a',
   allowedSchools: [
     'University of Toronto St. George',
     'University of Toronto Mississauga',
