@@ -49,24 +49,28 @@ function remove(key) {
   }
 }
 
-/** Returns `{ formData, resumePath }`, or null when there is no usable draft. */
+/** Returns `{ formData, resumePath, resumeName }`, or null when there is no
+ *  usable draft. */
 export function loadDraft() {
   const stored = readJson(DRAFT_KEY);
   if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
     return null;
   }
-  const { formData, resumePath } = stored;
+  const { formData, resumePath, resumeName } = stored;
   if (!formData || typeof formData !== 'object' || Array.isArray(formData)) {
     return null;
   }
   return {
     formData,
     resumePath: typeof resumePath === 'string' ? resumePath : '',
+    // Older drafts predate this field; an empty name falls back to a
+    // generic "Resume attached." rather than rendering "undefined".
+    resumeName: typeof resumeName === 'string' ? resumeName : '',
   };
 }
 
-export function saveDraft(formData, resumePath = '') {
-  return writeJson(DRAFT_KEY, { formData, resumePath });
+export function saveDraft(formData, resumePath = '', resumeName = '') {
+  return writeJson(DRAFT_KEY, { formData, resumePath, resumeName });
 }
 
 export function clearDraft() {

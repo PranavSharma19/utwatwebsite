@@ -149,6 +149,7 @@ export default function ApplicationForm({
   submitting,
   uploadingResume,
   resumePath,
+  resumeName,
   onChange,
   onSubmit,
   onResumeUpload,
@@ -381,11 +382,22 @@ export default function ApplicationForm({
               <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-outline">
                 Optional PDF Resume
               </div>
-              <p className="mt-2 text-sm text-on-surface-variant">
-                {resumePath
-                  ? "Resume attached."
-                  : "Upload a PDF resume, 10 MB max."}
-              </p>
+              {/* The applicant's own filename, so they can see at a glance
+                  whether they attached the right document rather than trusting
+                  a bare "attached". Breaking on characters, not words: a
+                  filename often has no spaces to wrap at. */}
+              {resumePath ? (
+                <p className="mt-2 flex items-start gap-2 text-sm text-on-surface-variant">
+                  <FileText size={14} className="mt-0.5 shrink-0 text-primary" />
+                  <span className="break-all">
+                    {resumeName || "Resume attached."}
+                  </span>
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-on-surface-variant">
+                  Upload a PDF resume, 10 MB max.
+                </p>
+              )}
               {fileError && (
                 <p className="mt-2 text-xs text-rose-300">{fileError}</p>
               )}
@@ -425,39 +437,15 @@ export default function ApplicationForm({
       </FormSection>
 
       <FormSection kicker="03 // BOTS" title="Event Fit">
-        <div className="grid gap-5 md:grid-cols-2">
-          <SelectField
-            disabled={disabled}
-            error={errors.preferred_track}
-            label="Preferred Track"
-            name="preferred_track"
-            onChange={handleChange}
-            options={portalConfig.tracks}
-            required
-            value={formData.preferred_track}
-          />
-          <SelectField
-            disabled={disabled}
-            label="Team Intent"
-            name="team_intent"
-            onChange={handleChange}
-            options={[
-              "Applying solo",
-              "Applying with a team",
-              "Looking for teammates",
-              "Not sure yet",
-            ]}
-            value={formData.team_intent}
-          />
-        </div>
-        <Field
+        <SelectField
           disabled={disabled}
-          error={errors.teammate_emails}
-          label="Teammate Emails"
-          name="teammate_emails"
+          error={errors.preferred_track}
+          label="Preferred Track"
+          name="preferred_track"
           onChange={handleChange}
-          placeholder="Separate emails with commas. Everyone should apply individually."
-          value={formData.teammate_emails}
+          options={portalConfig.tracks}
+          required
+          value={formData.preferred_track}
         />
       </FormSection>
 

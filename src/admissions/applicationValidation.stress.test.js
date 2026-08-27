@@ -120,32 +120,6 @@ describe('validateApplication — links', () => {
   });
 });
 
-describe('validateApplication — teammate emails', () => {
-  it.each([
-    '',
-    'a@b.co',
-    'a@b.co, c@d.org',
-    'a@b.co,,, c@d.org,',
-    '  a@b.co  ,  c@d.org  ',
-  ])('accepts %j', (value) => {
-    expect(
-      validateApplication(validForm({ teammate_emails: value })).teammate_emails,
-    ).toBeUndefined();
-  });
-
-  it.each([
-    'a@b', // no TLD
-    'a@b.co c@d.org', // space-separated instead of commas
-    'a@b.co; c@d.org', // semicolons
-    'not-an-email',
-    'a@@b.co',
-  ])('rejects %j', (value) => {
-    expect(
-      validateApplication(validForm({ teammate_emails: value })).teammate_emails,
-    ).toMatch(/separated by commas/);
-  });
-});
-
 describe('getCompletionStats', () => {
   it('starts at 25% on a blank form (4 selects have defaults) and reaches 100%', () => {
     // Finding: the dashboard shows "4 of 16 required fields complete" before
@@ -215,12 +189,6 @@ describe('toRow (the row the server actually inserts)', () => {
     expect(row.links.linkedin_url).toBeNull();
   });
 
-  it('splits teammate emails on commas and drops blanks', () => {
-    expect(
-      toRow(validForm({ teammate_emails: ' a@b.co ,, c@d.org , ' })).team_emails,
-    ).toEqual(['a@b.co', 'c@d.org']);
-  });
-
   it('coerces agreements to booleans rather than trusting truthiness', () => {
     const row = toRow(validForm({ agree_privacy: 'yes' }));
     expect(row.agreements.agree_privacy).toBe(false);
@@ -234,7 +202,6 @@ describe('toRow (the row the server actually inserts)', () => {
   it('survives a form with non-string values in every field', () => {
     const row = toRow({ email: 'a@b.co', links: 1, responses: null, first_name: 42 });
     expect(row.first_name).toBe('');
-    expect(row.team_emails).toEqual([]);
     expect(row.responses.why_bots).toBe('');
   });
 });
@@ -284,13 +251,6 @@ describe('known gaps (expected to fail until fixed)', () => {
     expect(Object.keys(errors).length).toBeGreaterThan(0);
   });
 
-  it.fails('more than 20 teammate emails (DB cardinality cap) is flagged', () => {
-    const many = Array.from({ length: 21 }, (_, i) => `t${i}@x.co`).join(', ');
-    expect(
-      validateApplication(validForm({ teammate_emails: many })).teammate_emails,
-    ).toBeDefined();
-  });
-
   it.fails('select values outside the option list are rejected (API tampering)', () => {
     const errors = validateApplication(
       validForm({
@@ -299,17 +259,8 @@ describe('known gaps (expected to fail until fixed)', () => {
         preferred_track: 'Crypto',
         hackathon_count: 'banana',
         ml_skill_level: 'God',
-        team_intent: 'whatever',
       }),
     );
     expect(Object.keys(errors).length).toBeGreaterThan(0);
-  });
-
-  it.fails('the applicant cannot list their own email as a teammate', () => {
-    const errors = validateApplication(
-      validForm({ teammate_emails: 'me@school.edu' }),
-      { email: 'me@school.edu' },
-    );
-    expect(errors.teammate_emails).toBeDefined();
   });
 });

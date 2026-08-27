@@ -94,8 +94,6 @@ export const emptyApplicationForm = {
   portfolio_url: '',
   devpost_url: '',
   preferred_track: portalConfig.tracks[0],
-  team_intent: 'Looking for teammates',
-  teammate_emails: '',
   why_bots: '',
   project_story: '',
   future_build: '',

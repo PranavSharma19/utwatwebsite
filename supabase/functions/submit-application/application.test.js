@@ -8,9 +8,7 @@ import {
   ALLOWED_SCHOOLS,
   DEADLINE,
   MAX_RESPONSE_LENGTH,
-  MAX_TEAM_EMAILS,
   isDeadlinePassed,
-  splitEmails,
   toRow,
   validate,
 } from './application.ts'
@@ -159,13 +157,6 @@ describe('validate — size caps', () => {
       validate(validForm({ why_bots: 'a'.repeat(MAX_RESPONSE_LENGTH) })).why_bots,
     ).toBeUndefined()
   })
-
-  it('rejects more teammates than the array constraint allows', () => {
-    const emails = Array.from({ length: MAX_TEAM_EMAILS + 1 }, (_, i) => `p${i}@x.co`)
-    expect(
-      validate(validForm({ teammate_emails: emails.join(',') })),
-    ).toHaveProperty('teammate_emails')
-  })
 })
 
 describe('validate — resume path', () => {
@@ -190,17 +181,6 @@ describe('validate — resume path', () => {
 
   it('treats a missing resume as fine -- it is optional', () => {
     expect(validate(validForm()).resume_path).toBeUndefined()
-  })
-})
-
-describe('splitEmails', () => {
-  it('drops blanks and trims', () => {
-    expect(splitEmails(' a@b.co ,, c@d.org , ')).toEqual(['a@b.co', 'c@d.org'])
-  })
-
-  it('returns an empty list for anything that is not a string', () => {
-    expect(splitEmails(null)).toEqual([])
-    expect(splitEmails(42)).toEqual([])
   })
 })
 

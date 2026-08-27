@@ -102,6 +102,21 @@ describe('draft persistence', () => {
     expect(screen.getByLabelText(/^email/i)).toHaveValue('ada@uwaterloo.ca');
   });
 
+  // The stored path is a server-chosen UUID, so "Resume attached." alone gives
+  // an applicant no way to tell whether they picked their resume or last term's
+  // lab report. The filename is the only thing that answers that.
+  it('names the attached file rather than just saying one is attached', () => {
+    saveDraft(completeDraft(), 'abc/resume.pdf', 'ada-resume-2026.pdf');
+    setup();
+    expect(screen.getByText('ada-resume-2026.pdf')).toBeInTheDocument();
+  });
+
+  it('falls back to generic wording for a draft saved before names were kept', () => {
+    saveDraft(completeDraft(), 'abc/resume.pdf');
+    setup();
+    expect(screen.getByText(/resume attached/i)).toBeInTheDocument();
+  });
+
   it('autosaves as the applicant types, with no Save button to forget', async () => {
     const user = userEvent.setup();
     setup();

@@ -82,12 +82,10 @@ export const MAX_LENGTHS: Record<string, number> = {
   ml_skill_level: 100,
   hackathon_count: 20,
   preferred_track: 200,
-  team_intent: 200,
 }
 
 export const MAX_RESPONSE_LENGTH = 5000
 export const MAX_LINK_LENGTH = 500
-export const MAX_TEAM_EMAILS = 20
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -102,13 +100,6 @@ export function str(value: unknown): string {
 
 export function isDeadlinePassed(now: Date = new Date()): boolean {
   return now > new Date(DEADLINE)
-}
-
-export function splitEmails(value: unknown): string[] {
-  return str(value)
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean)
 }
 
 /**
@@ -160,13 +151,6 @@ export function validate(form: Record<string, unknown>): Record<string, string> 
     }
   }
 
-  const teammates = splitEmails(form.teammate_emails)
-  if (teammates.length > MAX_TEAM_EMAILS) {
-    errors.teammate_emails = `List at most ${MAX_TEAM_EMAILS} teammates.`
-  } else if (!teammates.every((entry) => EMAIL_RE.test(entry))) {
-    errors.teammate_emails = 'Enter teammate emails separated by commas.'
-  }
-
   const resumePath = str(form.resume_path)
   if (resumePath && !RESUME_PATH_RE.test(resumePath)) {
     errors.resume_path = 'Re-upload your resume.'
@@ -202,8 +186,6 @@ export function toRow(form: Record<string, unknown>, now: Date = new Date()) {
     ml_skill_level: str(form.ml_skill_level),
     hackathon_count: str(form.hackathon_count),
     preferred_track: str(form.preferred_track),
-    team_intent: str(form.team_intent),
-    team_emails: splitEmails(form.teammate_emails),
     resume_path: str(form.resume_path) || null,
     links: LINK_FIELDS.reduce<Record<string, string | null>>((acc, field) => {
       acc[field] = str(form[field]) || null

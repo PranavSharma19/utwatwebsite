@@ -30,18 +30,6 @@ function isValidOptionalUrl(value) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function isValidEmailList(value) {
-  if (!value) {
-    return true;
-  }
-
-  return String(value)
-    .split(',')
-    .map((email) => email.trim())
-    .filter(Boolean)
-    .every((email) => EMAIL_RE.test(email));
-}
-
 export function validateApplication(formData) {
   const errors = {};
 
@@ -66,10 +54,6 @@ export function validateApplication(formData) {
 
   if (!portalConfig.allowedSchools.includes(formData.school)) {
     errors.school = 'Applications are only open to selected schools for v1.';
-  }
-
-  if (!isValidEmailList(formData.teammate_emails)) {
-    errors.teammate_emails = 'Enter teammate emails separated by commas.';
   }
 
   URL_FIELDS.forEach((field) => {

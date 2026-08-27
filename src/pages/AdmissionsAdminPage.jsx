@@ -72,7 +72,6 @@ function buildCsv(applications) {
     "school",
     "program",
     "preferred_track",
-    "team_intent",
     "submitted_at",
     "admin_notes",
   ];
@@ -148,10 +147,6 @@ function ApplicationDetail({
         <DetailText label="Track">{application.preferred_track}</DetailText>
         <DetailText label="Submitted">
           {formatDate(application.submitted_at)}
-        </DetailText>
-        <DetailText label="Team Intent">{application.team_intent}</DetailText>
-        <DetailText label="Teammates">
-          {(application.team_emails || []).join(", ")}
         </DetailText>
       </div>
 

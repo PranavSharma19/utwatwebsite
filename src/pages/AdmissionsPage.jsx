@@ -191,6 +191,9 @@ export default function AdmissionsPage() {
     return draft ? { ...emptyApplicationForm, ...draft.formData } : { ...emptyApplicationForm };
   });
   const [resumePath, setResumePath] = useState(() => loadDraft()?.resumePath || '');
+  // Shown back to the applicant so they can confirm they attached the right
+  // document. The stored path is a server-chosen UUID and says nothing.
+  const [resumeName, setResumeName] = useState(() => loadDraft()?.resumeName || '');
   const [submission, setSubmission] = useState(() => loadSubmission());
   const [errors, setErrors] = useState({});
   const [pageError, setPageError] = useState('');
@@ -212,8 +215,8 @@ export default function AdmissionsPage() {
   // server-side draft any more, so an accidental refresh with no autosave
   // would take the whole application with it.
   useEffect(() => {
-    saveDraft(formData, resumePath);
-  }, [formData, resumePath]);
+    saveDraft(formData, resumePath, resumeName);
+  }, [formData, resumePath, resumeName]);
 
   const resetCaptcha = () => {
     setCaptchaToken('');
@@ -242,6 +245,7 @@ export default function AdmissionsPage() {
     try {
       const path = await uploadResume(file, token);
       setResumePath(path);
+      setResumeName(file.name);
       setPageMessage('Resume attached.');
     } catch (error) {
       setPageError(error.message);
@@ -254,6 +258,7 @@ export default function AdmissionsPage() {
   // never referenced by a row, because the path is only recorded at submit.
   const handleResumeRemove = () => {
     setResumePath('');
+    setResumeName('');
     setPageMessage('Resume removed.');
   };
 
@@ -374,6 +379,7 @@ export default function AdmissionsPage() {
             onResumeUpload={handleResumeUpload}
             onSubmit={handleSubmit}
             resumePath={resumePath}
+            resumeName={resumeName}
             submitting={submitting}
             uploadingResume={uploadingResume}
           />

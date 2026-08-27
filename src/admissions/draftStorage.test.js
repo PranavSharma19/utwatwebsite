@@ -15,11 +15,27 @@ afterEach(() => {
 
 describe('draft round-trip', () => {
   it('returns what was stored', () => {
-    saveDraft({ first_name: 'Ada' }, 'abc/resume.pdf');
+    saveDraft({ first_name: 'Ada' }, 'abc/resume.pdf', 'ada-lovelace-cv.pdf');
     expect(loadDraft()).toEqual({
       formData: { first_name: 'Ada' },
       resumePath: 'abc/resume.pdf',
+      resumeName: 'ada-lovelace-cv.pdf',
     });
+  });
+
+  // The stored path is a server-chosen UUID, so the filename is the only thing
+  // that tells an applicant which document they actually attached. Losing it on
+  // reload would leave them staring at "Resume attached." with no way to check.
+  it('keeps the resume filename across a reload', () => {
+    saveDraft({ first_name: 'Ada' }, 'abc/resume.pdf', 'final-FINAL-v3.pdf');
+    expect(loadDraft().resumeName).toBe('final-FINAL-v3.pdf');
+  });
+
+  // Drafts written before the filename was tracked still load; they just fall
+  // back to the generic wording rather than rendering "undefined".
+  it('defaults the filename to empty for a draft saved without one', () => {
+    saveDraft({ first_name: 'Ada' }, 'abc/resume.pdf');
+    expect(loadDraft().resumeName).toBe('');
   });
 
   it('reports no draft when nothing has been stored', () => {
