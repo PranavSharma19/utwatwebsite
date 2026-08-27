@@ -84,7 +84,7 @@ export const privacyPolicy = {
       paragraphs: [
         'Applying does not create an account and does not involve a password or a sign-in link. You fill in the form and submit it. We ask for your email address because it is how the organisers reach you about a decision, not because it signs you in.',
         'While you are still filling the form in, your answers are held in your own browser and are not sent to us. That means an unfinished application stays on the device you started it on, and clearing your browser data clears it. Nothing reaches our server until you press Submit.',
-        'When you submit, we give you a private status link. It is the only way back to your application, so keep it. Anyone holding that link can see the status of that application, which is why it is unguessable and why we suggest bookmarking rather than sharing it.',
+        'When you submit, we give you a private status link. Your browser also remembers it, so returning to the application page on the same browser brings you back without it; the link is what lets you check from a different device. Anyone holding it can see the status of that application, which is why it is unguessable and why we suggest keeping it rather than sharing it.',
       ],
     },
     {

@@ -61,11 +61,11 @@ function SetupNotice() {
  * What an applicant sees after submitting, and what they see if they come back
  * to /apply on the same browser afterwards.
  *
- * The status link is the whole point of this screen. It is the only way back
- * to the application -- there is no account to sign into, and we cannot rely
- * on email reaching them, which is the reason this portal has no accounts in
- * the first place. So it is shown in full, selectable, and copyable rather
- * than merely stored.
+ * The status link is offered here, not pressed on them. This browser already
+ * remembers the submission, and decisions are emailed, so the link is what you
+ * need to check from a different device -- not a lifeline to guard for a month.
+ * The earlier copy called it "the only way back", which was both alarming and
+ * untrue: coming back to /apply on this browser lands right here.
  */
 function SubmittedPanel({ submission }) {
   const [copied, setCopied] = useState(false);
@@ -92,17 +92,21 @@ function SubmittedPanel({ submission }) {
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
             You are in the pile for {portalConfig.eventName}{' '}
-            {portalConfig.eventYear}. Decisions go out before the event on{' '}
-            {portalConfig.eventDateRange}.
+            {portalConfig.eventYear}. We will email you your decision before the
+            event on {portalConfig.eventDateRange} -- you do not need to do
+            anything until then.
           </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
             <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
-              Save this link
+              Check from another device
             </div>
             <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-              It is how you check your result. Bookmark it now -- we cannot send
-              you another copy, and it is the only way back to your application.
+              Nothing to keep track of: this browser remembers your application,
+              so you can just return to{' '}
+              <span className="text-white">utwat.ca/apply</span> any time. Copy
+              this link only if you want to check from your phone or another
+              computer.
             </p>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <code className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-white">
