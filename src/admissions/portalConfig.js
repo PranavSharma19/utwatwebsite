@@ -75,6 +75,11 @@ export const portalConfig = {
 export const emptyApplicationForm = {
   first_name: '',
   last_name: '',
+  // Applying no longer involves an account, so this is typed rather than read
+  // off a verified JWT claim. It is the only handle the admissions team has on
+  // an applicant, and applications_email_uniq makes it the thing that keeps
+  // one person from filling the form fifty times.
+  email: '',
   phone: '',
   school: portalConfig.allowedSchools[0],
   program: '',
@@ -104,6 +109,7 @@ export const emptyApplicationForm = {
 export const requiredApplicationFields = [
   'first_name',
   'last_name',
+  'email',
   'phone',
   'school',
   'program',

@@ -57,7 +57,7 @@ export const privacyPolicy = {
       paragraphs: [
         'Voting in the UofT versus Waterloo poll does not require an account and does not identify you.',
         'We record only which school was picked and when. No identifier of any kind is stored against a vote -- not your IP address, not a hash of it, not a cookie. Your browser remembers your own choice so the page can show it back to you; that never leaves your device.',
-        'Cloudflare Turnstile runs on the vote and sign-in forms to distinguish people from bots. Cloudflare receives your IP address and basic browser information as part of that check, under their own privacy terms. Our own server sees your IP address for the length of the request, to pass to that check and to limit floods, and does not store it.',
+        'Cloudflare Turnstile runs on the vote and application forms to distinguish people from bots. Cloudflare receives your IP address and basic browser information as part of that check, under their own privacy terms. Our own server sees your IP address for the length of the request, to pass to that check and to limit floods, and does not store it.',
       ],
     },
     {
@@ -73,16 +73,18 @@ export const privacyPolicy = {
         'We use a small number of service providers to run the site. They process data on our behalf:',
       ],
       bullets: [
-        'Supabase — the database, sign-in, and résumé storage. Our project is hosted in Canada (ca-central-1).',
+        'Supabase — the database and résumé storage. Our project is hosted in Canada (ca-central-1).',
         'Vercel — website hosting and content delivery. Vercel handles the request logs that any web host necessarily sees.',
         'Cloudflare — Turnstile bot protection on forms, as described above.',
         'Google Fonts — the site loads its typefaces from Google, which means Google receives your IP address when a page loads.',
       ],
     },
     {
-      heading: 'How we sign you in',
+      heading: 'There is no account',
       paragraphs: [
-        'The applicant portal has no passwords. You enter your email address and we send a single-use link that signs you in. Those links expire and can only be opened once. We store your email address so we can recognise you when you come back to finish a draft.',
+        'Applying does not create an account and does not involve a password or a sign-in link. You fill in the form and submit it. We ask for your email address because it is how the organisers reach you about a decision, not because it signs you in.',
+        'While you are still filling the form in, your answers are held in your own browser and are not sent to us. That means an unfinished application stays on the device you started it on, and clearing your browser data clears it. Nothing reaches our server until you press Submit.',
+        'When you submit, we give you a private status link. It is the only way back to your application, so keep it. Anyone holding that link can see the status of that application, which is why it is unguessable and why we suggest bookmarking rather than sharing it.',
       ],
     },
     {
@@ -102,7 +104,7 @@ export const privacyPolicy = {
     {
       heading: 'Security',
       paragraphs: [
-        'Applications are protected so that you can only ever read and edit your own; the rules that enforce this live in the database itself rather than only in the website. Résumés are held in a private bucket that is not publicly reachable. Organiser access is restricted to a named list of accounts.',
+        'Your browser cannot read, write, or change an application directly. Every submission goes through a single server-side endpoint that checks it first, and the database grants the website no access of its own — the rules live in the database rather than only in the page. Résumés are held in a private bucket that is not publicly reachable. Organiser access is restricted to a named list of accounts and does require signing in.',
         'No system is perfect. Please do not put information in a free-text answer that you would not want an organiser to read.',
       ],
     },
@@ -140,7 +142,7 @@ export const termsOfService = {
       heading: 'Your application',
       paragraphs: [
         'You agree that what you tell us is true, that the work you describe is yours, and that you have permission to share any teammate\'s email address you enter. Applications found to contain deliberate misrepresentation may be withdrawn at any point, including during the event.',
-        'You may edit your draft until you submit it, and until the deadline passes.',
+        'You may change your answers freely until you press Submit. Submitting is final: there is no account to sign back into and no way to edit afterwards. If something is wrong in a submitted application, write to the organisers and ask.',
       ],
     },
     {

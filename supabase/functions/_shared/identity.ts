@@ -1,11 +1,14 @@
-// The parts of faction-cheer that are pure: deriving a stable, non-forgeable
-// identity from request headers, and rate-limiting on it.
+// The pure parts shared by every edge function here: deriving a stable,
+// non-forgeable identity from request headers, rate-limiting on it, and the
+// origin/hostname allowlists that both CORS and Turnstile depend on.
 //
-// They live here rather than in index.ts so they can be tested without
+// They live outside any one function directory so they can be tested without
 // standing up the Deno runtime or a local Postgres — this is the logic most
 // worth pinning (a mistake in either function silently merges unrelated
-// visitors into one voter) and the logic least able to be checked by looking
-// at a rendered page. index.ts imports from here; so does identity.test.js.
+// callers into one) and the logic least able to be checked by looking at a
+// rendered page. faction-cheer and submit-application both import from here;
+// so does identity.test.js alongside it. A leading underscore keeps Supabase
+// from treating this directory as a deployable function.
 
 // --- IP extraction -----------------------------------------------------
 //

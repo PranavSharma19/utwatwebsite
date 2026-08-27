@@ -28,6 +28,8 @@ function isValidOptionalUrl(value) {
   }
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function isValidEmailList(value) {
   if (!value) {
     return true;
@@ -37,7 +39,7 @@ function isValidEmailList(value) {
     .split(',')
     .map((email) => email.trim())
     .filter(Boolean)
-    .every((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    .every((email) => EMAIL_RE.test(email));
 }
 
 export function validateApplication(formData) {
@@ -54,6 +56,13 @@ export function validateApplication(formData) {
       errors[field] = 'This confirmation is required.';
     }
   });
+
+  // The applicant's own address. Required-ness is handled by the loop above;
+  // this only runs once something has been typed, so an empty field shows
+  // "required" rather than "invalid".
+  if (formData.email && !EMAIL_RE.test(String(formData.email).trim())) {
+    errors.email = 'Enter a valid email address.';
+  }
 
   if (!portalConfig.allowedSchools.includes(formData.school)) {
     errors.school = 'Applications are only open to selected schools for v1.';

@@ -22,3 +22,16 @@ verify_jwt = false
 # portal's admin console genuinely does authenticate: the function reads the
 # caller's JWT and checks the email against ADMIN_EMAIL_ALLOWLIST.
 verify_jwt = true
+
+[functions.submit-application]
+# Applying does not involve signing in any more, so there is no JWT to verify.
+# With the platform default left on, the gateway would reject every application
+# with a 401 before the function ran -- the same failure mode faction-cheer hit.
+#
+# What guards this endpoint is inside the function: a Turnstile token verified
+# against TURNSTILE_EXPECTED_HOSTNAME, a per-IP flood limit, full server-side
+# validation, the September 8 deadline, and a unique index on lower(email).
+# The browser holds no grant on public.applications at all -- see
+# supabase/migrations/202608260003_anonymous_applications.sql -- so this
+# function is the entire applicant write surface.
+verify_jwt = false

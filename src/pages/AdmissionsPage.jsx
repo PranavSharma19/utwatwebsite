@@ -1,18 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, CheckCircle2, Loader2, MailWarning } from 'lucide-react';
-import ApplicationForm from '../admissions/ApplicationForm';
-import AuthPanel from '../admissions/AuthPanel';
-import PortalShell from '../admissions/PortalShell';
-import StatusBadge from '../admissions/StatusBadge';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  applicationRecordToForm,
-  getOrCreateApplication,
-  removeResume,
-  saveApplicationDraft,
+  CalendarClock,
+  CheckCircle2,
+  Copy,
+  MailWarning,
+} from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
+import ApplicationForm from '../admissions/ApplicationForm';
+import PortalShell from '../admissions/PortalShell';
+import {
   submitApplication,
   uploadResume,
 } from '../admissions/applicationService';
 import {
+  clearDraft,
+  loadDraft,
+  loadSubmission,
+  saveDraft,
+  saveSubmission,
+} from '../admissions/draftStorage';
+import {
+  emptyApplicationForm,
   formatDeadline,
   isDeadlinePassed,
   portalConfig,
@@ -21,8 +30,12 @@ import {
   getCompletionStats,
   validateApplication,
 } from '../admissions/applicationValidation';
-import { supabase } from '../admissions/supabaseClient';
-import { useSupabaseSession } from '../admissions/useSupabaseSession';
+import { isSupabaseConfigured } from '../admissions/supabaseClient';
+
+// .trim() strips stray whitespace / BOM that env tooling can prepend, which
+// would otherwise make Cloudflare reject the sitekey as malformed. (Same bug,
+// same fix, as src/faction/FactionChoice.jsx.)
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
 
 function SetupNotice() {
   return (
@@ -36,7 +49,7 @@ function SetupNotice() {
           <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
             Add <code>VITE_SUPABASE_URL</code> and{' '}
             <code>VITE_SUPABASE_ANON_KEY</code> to your local environment to
-            enable admissions auth and storage.
+            enable applications.
           </p>
         </div>
       </div>
@@ -44,23 +57,83 @@ function SetupNotice() {
   );
 }
 
-function DashboardCard({ application, completion }) {
+/**
+ * What an applicant sees after submitting, and what they see if they come back
+ * to /apply on the same browser afterwards.
+ *
+ * The status link is the whole point of this screen. It is the only way back
+ * to the application -- there is no account to sign into, and we cannot rely
+ * on email reaching them, which is the reason this portal has no accounts in
+ * the first place. So it is shown in full, selectable, and copyable rather
+ * than merely stored.
+ */
+function SubmittedPanel({ submission }) {
+  const [copied, setCopied] = useState(false);
+  const statusUrl = `${window.location.origin}/apply/status/${submission.statusToken}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(statusUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Clipboard access is refused in plenty of ordinary situations. The link
+      // is on screen and selectable, so there is nothing to recover from.
+    }
+  };
+
+  return (
+    <div className="glass-panel rounded-3xl border border-emerald-400/20 bg-emerald-950/10 p-8">
+      <div className="flex items-start gap-4">
+        <CheckCircle2 className="mt-1 shrink-0 text-emerald-300" size={24} />
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-2xl font-black uppercase text-white">
+            Application Received
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+            You are in the pile for {portalConfig.eventName}{' '}
+            {portalConfig.eventYear}. Decisions go out before the event on{' '}
+            {portalConfig.eventDateRange}.
+          </p>
+
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+              Save this link
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+              It is how you check your result. Bookmark it now -- we cannot send
+              you another copy, and it is the only way back to your application.
+            </p>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <code className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-white">
+                {statusUrl}
+              </code>
+              <button
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+                onClick={copy}
+                type="button"
+              >
+                <Copy size={14} />
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
+          <Link
+            className="mt-6 inline-flex font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:underline"
+            to={`/apply/status/${submission.statusToken}`}
+          >
+            Open status page
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProgressCards({ completion, resumePath }) {
   return (
     <div className="grid gap-5 lg:grid-cols-3">
-      <div className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/80 p-6 backdrop-blur-2xl">
-        <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-outline">
-          Status
-        </div>
-        <div className="mt-4">
-          <StatusBadge status={application?.status} />
-        </div>
-        <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-          {application?.status === 'incomplete'
-            ? 'Draft in progress. Submit before the deadline for review.'
-            : 'Your application is locked and visible to the admissions team.'}
-        </p>
-      </div>
-
       <div className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/80 p-6 backdrop-blur-2xl">
         <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-outline">
           Deadline
@@ -95,100 +168,97 @@ function DashboardCard({ application, completion }) {
           {completion.complete} of {completion.total} required fields complete.
         </p>
       </div>
+
+      <div className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/80 p-6 backdrop-blur-2xl">
+        <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-outline">
+          Resume
+        </div>
+        <div className="mt-4 font-display text-lg font-bold text-white">
+          {resumePath ? 'Attached' : 'Not attached'}
+        </div>
+        <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+          Optional. A PDF helps, but a strong written application stands on its
+          own.
+        </p>
+      </div>
     </div>
   );
 }
 
 export default function AdmissionsPage() {
-  const { configured, loading, user } = useSupabaseSession();
-  const [application, setApplication] = useState(null);
-  const [formData, setFormData] = useState(null);
+  const [formData, setFormData] = useState(() => {
+    const draft = loadDraft();
+    return draft ? { ...emptyApplicationForm, ...draft.formData } : { ...emptyApplicationForm };
+  });
+  const [resumePath, setResumePath] = useState(() => loadDraft()?.resumePath || '');
+  const [submission, setSubmission] = useState(() => loadSubmission());
   const [errors, setErrors] = useState({});
   const [pageError, setPageError] = useState('');
   const [pageMessage, setPageMessage] = useState('');
-  const [loadingApplication, setLoadingApplication] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
+  const turnstileRef = useRef(null);
 
+  // The widget only runs when a sitekey is configured, so local dev and the
+  // test environment keep the whole form working; only the network call the
+  // Edge Function requires a token for is affected.
+  const captchaEnabled = Boolean(TURNSTILE_SITE_KEY);
   const deadlinePassed = isDeadlinePassed();
-  const readOnly = application?.status && application.status !== 'incomplete';
-  const completion = useMemo(
-    () => getCompletionStats(formData || {}),
-    [formData],
-  );
+  const completion = useMemo(() => getCompletionStats(formData), [formData]);
 
+  // Persisted on every change rather than behind a Save button: there is no
+  // server-side draft any more, so an accidental refresh with no autosave
+  // would take the whole application with it.
   useEffect(() => {
-    let active = true;
+    saveDraft(formData, resumePath);
+  }, [formData, resumePath]);
 
-    queueMicrotask(() => {
-      if (!active) {
-        return;
-      }
-
-      if (!user) {
-        setApplication(null);
-        setFormData(null);
-        return;
-      }
-
-      setLoadingApplication(true);
-      setPageError('');
-
-      getOrCreateApplication(user)
-        .then((record) => {
-          if (!active) {
-            return;
-          }
-          setApplication(record);
-          setFormData(applicationRecordToForm(record));
-        })
-        .catch((error) => {
-          if (active) {
-            setPageError(error.message);
-          }
-        })
-        .finally(() => {
-          if (active) {
-            setLoadingApplication(false);
-          }
-        });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [user]);
-
-  const handleSignOut = async () => {
-    await supabase?.auth.signOut();
+  const resetCaptcha = () => {
+    setCaptchaToken('');
+    turnstileRef.current?.reset();
   };
 
-  const handleSave = async () => {
-    if (!formData || !application || !user) {
+  /** Tokens are single-use, so each network call takes the current one and
+   *  immediately asks the widget for another. */
+  const takeCaptchaToken = () => {
+    if (!captchaEnabled) return '';
+    const token = captchaToken;
+    resetCaptcha();
+    return token;
+  };
+
+  const handleResumeUpload = async (file) => {
+    const token = takeCaptchaToken();
+    if (captchaEnabled && !token) {
+      setPageError('Verification is still loading. Try again in a moment.');
       return;
     }
 
-    setSaving(true);
+    setUploadingResume(true);
     setPageError('');
     setPageMessage('');
     try {
-      const record = await saveApplicationDraft(formData, application);
-      setApplication(record);
-      setFormData(applicationRecordToForm(record));
-      setPageMessage('Draft saved.');
+      const path = await uploadResume(file, token);
+      setResumePath(path);
+      setPageMessage('Resume attached.');
     } catch (error) {
       setPageError(error.message);
     } finally {
-      setSaving(false);
+      setUploadingResume(false);
     }
+  };
+
+  // Nothing to delete server-side: the object is orphaned in the bucket and
+  // never referenced by a row, because the path is only recorded at submit.
+  const handleResumeRemove = () => {
+    setResumePath('');
+    setPageMessage('Resume removed.');
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!formData || !application || !user) {
-      return;
-    }
 
     const validationErrors = validateApplication(formData);
     setErrors(validationErrors);
@@ -200,91 +270,80 @@ export default function AdmissionsPage() {
       return;
     }
 
+    const token = takeCaptchaToken();
+    if (captchaEnabled && !token) {
+      setPageError('Verification is still loading. Try again in a moment.');
+      return;
+    }
+
     setSubmitting(true);
     setPageError('');
     try {
-      const record = await submitApplication(formData, application);
-      setApplication(record);
-      setFormData(applicationRecordToForm(record));
-      setPageMessage('Application submitted. Good luck!');
+      const application = await submitApplication(
+        { ...formData, resume_path: resumePath },
+        token,
+      );
+      const receipt = {
+        id: application.id,
+        statusToken: application.status_token,
+        submittedAt: application.submitted_at,
+      };
+      saveSubmission(receipt);
+      clearDraft();
+      setSubmission(receipt);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
+      // The server re-runs every rule the form runs. When it rejects something
+      // the client let through, the message belongs on the field.
+      if (error.fieldErrors && Object.keys(error.fieldErrors).length > 0) {
+        setErrors(error.fieldErrors);
+      }
       setPageError(error.message);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleResumeUpload = async (file) => {
-    if (!application || !user) {
-      return;
-    }
-
-    setUploadingResume(true);
-    setPageError('');
-    setPageMessage('');
-    try {
-      const record = await uploadResume(file, user, application.id);
-      setApplication(record);
-      setPageMessage('Resume uploaded.');
-    } catch (error) {
-      setPageError(error.message);
-    } finally {
-      setUploadingResume(false);
-    }
-  };
-
-  const handleResumeRemove = async () => {
-    if (!application) {
-      return;
-    }
-
-    setUploadingResume(true);
-    setPageError('');
-    setPageMessage('');
-    try {
-      const record = await removeResume(application.id, application.resume_path);
-      setApplication(record);
-      setPageMessage('Resume removed.');
-    } catch (error) {
-      setPageError(error.message);
-    } finally {
-      setUploadingResume(false);
-    }
-  };
+  const captcha = captchaEnabled ? (
+    <div className="space-y-2">
+      <Turnstile
+        ref={turnstileRef}
+        siteKey={TURNSTILE_SITE_KEY}
+        onError={() => {
+          setCaptchaToken('');
+          setCaptchaError(
+            'Verification could not load. Refresh the page or disable any ad blocker, then try again.',
+          );
+        }}
+        onExpire={() => setCaptchaToken('')}
+        onSuccess={(token) => {
+          setCaptchaToken(token);
+          setCaptchaError('');
+        }}
+      />
+      {captchaError && <p className="text-xs text-rose-300">{captchaError}</p>}
+    </div>
+  ) : null;
 
   return (
     <PortalShell
-      onSignOut={handleSignOut}
-      subtitle="The portal for BOTS 2026 applications. Sign in, save your draft, upload an optional resume, and submit before the deadline."
-      user={user}
+      subtitle="No account, no sign-in link, no waiting on email. Fill this in and submit it -- your answers stay in this browser until you do."
+      title="Apply to Battle of the Schools"
     >
-      {!configured && <SetupNotice />}
+      {!isSupabaseConfigured && <SetupNotice />}
 
-      {configured && loading && (
-        <div className="flex items-center gap-3 text-on-surface-variant">
-          <Loader2 className="animate-spin text-primary" size={18} />
-          Checking session...
-        </div>
+      {isSupabaseConfigured && submission && (
+        <SubmittedPanel submission={submission} />
       )}
 
-      {configured && !loading && !user && <AuthPanel />}
-
-      {configured && user && loadingApplication && (
-        <div className="flex items-center gap-3 text-on-surface-variant">
-          <Loader2 className="animate-spin text-primary" size={18} />
-          Loading your application...
-        </div>
-      )}
-
-      {configured && user && application && formData && (
+      {isSupabaseConfigured && !submission && (
         <div className="space-y-8">
-          <DashboardCard application={application} completion={completion} />
+          <ProgressCards completion={completion} resumePath={resumePath} />
 
-          {deadlinePassed && application.status === 'incomplete' && (
+          {deadlinePassed && (
             <div className="rounded-2xl border border-rose-400/20 bg-rose-950/20 p-5 text-sm text-rose-100">
-              The application deadline has passed. Draft edits and submissions
-              are now closed.
+              The application deadline has passed. Submissions are closed.
             </div>
           )}
 
@@ -302,7 +361,8 @@ export default function AdmissionsPage() {
           )}
 
           <ApplicationForm
-            application={application}
+            captcha={captcha}
+            captchaReady={!captchaEnabled || Boolean(captchaToken)}
             deadlinePassed={deadlinePassed}
             errors={errors}
             formData={formData}
@@ -312,10 +372,8 @@ export default function AdmissionsPage() {
             }}
             onResumeRemove={handleResumeRemove}
             onResumeUpload={handleResumeUpload}
-            onSave={handleSave}
             onSubmit={handleSubmit}
-            readOnly={readOnly}
-            saving={saving}
+            resumePath={resumePath}
             submitting={submitting}
             uploadingResume={uploadingResume}
           />

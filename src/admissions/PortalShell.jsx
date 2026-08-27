@@ -76,7 +76,7 @@ export default function PortalShell({
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-relaxed text-on-surface-variant sm:text-base">
               {subtitle ||
-                'Save a draft, come back anytime before the deadline, and submit once your application feels ready.'}
+                'Fill in the form and submit before the deadline. No account required.'}
             </p>
           </section>
 

@@ -126,33 +126,31 @@ describe('contact links', () => {
 })
 
 /**
- * The submission deadline exists twice: once here, and once hard-coded inside
- * public.submit_application, which is the only path that can mark an
- * application submitted. When they drifted apart the portal advertised an open
- * window, accepted a complete form, and rejected the final click -- a failure
- * that no amount of front-end testing could see, because the front end was
- * right and the database was not.
+ * The submission deadline exists twice: once here, and once hard-coded in
+ * supabase/functions/submit-application/application.ts, which backs the only
+ * writer that can create a submitted application. When they drifted apart the
+ * portal advertised an open window, accepted a complete form, and rejected the
+ * final click -- a failure that no amount of front-end testing could see,
+ * because the front end was right and the server was not.
+ *
+ * It used to live in the public.submit_application RPC. That function required
+ * auth.uid() and was dropped along with the account requirement, so this guard
+ * follows the value to the edge function rather than being deleted with it --
+ * the drift it catches is a property of having two copies, not of where the
+ * second copy happens to live.
  */
 describe('server-side deadline', () => {
-  const migrationsDir = join('supabase', 'migrations');
+  const applicationModule = join(
+    'supabase',
+    'functions',
+    'submit-application',
+    'application.ts',
+  );
 
-  /** The deadline from the newest migration that defines submit_application. */
   function deadlineInForce() {
-    const defining = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort()
-      .filter((f) =>
-        readFileSync(join(migrationsDir, f), 'utf8').includes(
-          'function public.submit_application',
-        ),
-      );
-    expect(defining.length).toBeGreaterThan(0);
-    const newest = readFileSync(
-      join(migrationsDir, defining[defining.length - 1]),
-      'utf8',
-    );
-    const match = newest.match(/deadline\s+timestamptz\s*:=\s*'([^']+)'/);
-    expect(match, 'submit_application must declare a deadline').not.toBeNull();
+    const source = readFileSync(applicationModule, 'utf8');
+    const match = source.match(/export const DEADLINE\s*=\s*'([^']+)'/);
+    expect(match, 'application.ts must export a DEADLINE').not.toBeNull();
     return match[1];
   }
 
@@ -165,5 +163,33 @@ describe('server-side deadline', () => {
   it('has not already passed at the time the suite runs', () => {
     // A deadline in the past means submissions are being refused right now.
     expect(new Date(deadlineInForce()).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  // The RPC is gone; a migration re-creating it would reintroduce a second
+  // server-side deadline that this guard does not read.
+  it('is not also defined by a lingering submit_application RPC', () => {
+    const migrationsDir = join('supabase', 'migrations');
+    const defining = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .filter((f) =>
+        /create (or replace )?function public\.submit_application/.test(
+          readFileSync(join(migrationsDir, f), 'utf8'),
+        ),
+      );
+    const newest = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .filter((f) =>
+        readFileSync(join(migrationsDir, f), 'utf8').includes(
+          'drop function if exists public.submit_application',
+        ),
+      );
+    // Either it was never defined, or the drop is newer than every definition.
+    expect(
+      defining.length === 0 ||
+        (newest.length > 0 && newest[newest.length - 1] > defining[defining.length - 1]),
+      'a migration re-creates submit_application after it was dropped',
+    ).toBe(true);
   });
 })

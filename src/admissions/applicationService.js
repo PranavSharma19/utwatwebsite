@@ -1,263 +1,143 @@
-import { emptyApplicationForm, portalConfig } from './portalConfig';
+import { portalConfig } from './portalConfig';
 import { requireSupabase } from './supabaseClient';
 
-const FORM_COLUMNS = [
-  'first_name',
-  'last_name',
-  'phone',
-  'school',
-  'program',
-  'level_of_study',
-  'graduation_year',
-  'over_18',
-  'can_attend_in_person',
-  'ml_skill_level',
-  'hackathon_count',
-  'preferred_track',
-];
+const SUBMIT_FUNCTION = 'submit-application';
 
-const LINK_FIELDS = [
-  'github_url',
-  'linkedin_url',
-  'portfolio_url',
-  'devpost_url',
-];
-
-const RESPONSE_FIELDS = [
-  'why_bots',
-  'project_story',
-  'future_build',
-  'anything_else',
-  'joke',
-];
-
-const AGREEMENT_FIELDS = [
-  'agree_code_of_conduct',
-  'agree_privacy',
-  'agree_accuracy',
-];
-
-function normalizeArrayFromText(value) {
-  return String(value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function joinArrayForForm(value) {
-  return Array.isArray(value) ? value.join(', ') : '';
+/**
+ * An error from an edge function that carries per-field messages.
+ *
+ * The submit endpoint re-runs every rule the form runs, because a server that
+ * trusts the client's validation is not validating. When it rejects something
+ * the client let through, the result has to land back on the offending field
+ * rather than as a banner saying "validation failed" over a form that looks
+ * fine -- otherwise the applicant has no way to find what is wrong.
+ */
+export class ApplicationError extends Error {
+  constructor(message, fieldErrors = {}) {
+    super(message);
+    this.name = 'ApplicationError';
+    this.fieldErrors = fieldErrors;
+  }
 }
 
 async function toFunctionError(error) {
   const fallbackMessage = error?.message || 'Edge Function request failed.';
 
   if (!error?.context || typeof error.context.json !== 'function') {
-    return new Error(fallbackMessage);
+    return new ApplicationError(fallbackMessage);
   }
 
   try {
     const payload = await error.context.json();
+    const fieldErrors = payload?.errors;
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      return new ApplicationError(
+        payload.error === 'validation failed'
+          ? 'Please fix the highlighted fields.'
+          : payload.error || fallbackMessage,
+        fieldErrors,
+      );
+    }
     if (payload?.error) {
-      return new Error(payload.error);
+      return new ApplicationError(payload.error);
     }
   } catch {
     // Ignore JSON parsing issues and fall back to the original error message.
   }
 
-  return new Error(fallbackMessage);
+  return new ApplicationError(fallbackMessage);
 }
 
-export function applicationRecordToForm(application) {
-  if (!application) {
-    return { ...emptyApplicationForm };
-  }
-
-  return {
-    ...emptyApplicationForm,
-    ...FORM_COLUMNS.reduce((acc, key) => {
-      acc[key] = application[key] ?? emptyApplicationForm[key];
-      return acc;
-    }, {}),
-    ...LINK_FIELDS.reduce((acc, key) => {
-      acc[key] = application.links?.[key] ?? '';
-      return acc;
-    }, {}),
-    ...RESPONSE_FIELDS.reduce((acc, key) => {
-      acc[key] = application.responses?.[key] ?? '';
-      return acc;
-    }, {}),
-    ...AGREEMENT_FIELDS.reduce((acc, key) => {
-      acc[key] = Boolean(application.agreements?.[key]);
-      return acc;
-    }, {}),
-    team_intent: application.team_intent || emptyApplicationForm.team_intent,
-    teammate_emails: joinArrayForForm(application.team_emails),
-  };
-}
-
-// Draft-content columns only. Server-owned columns (user_id, email, status,
-// submitted_at, updated_at, admin_notes, decided_*) are NOT included: the
-// `authenticated` role has no column privilege to write them, and the DB
-// trigger/RPC own them. See docs/admissions-security-hardening.md.
-export function formToApplicationPayload(formData) {
-  return {
-    ...FORM_COLUMNS.reduce((acc, key) => {
-      acc[key] = formData[key];
-      return acc;
-    }, {}),
-    team_intent: formData.team_intent,
-    team_emails: normalizeArrayFromText(formData.teammate_emails),
-    links: LINK_FIELDS.reduce((acc, key) => {
-      acc[key] = formData[key]?.trim() || null;
-      return acc;
-    }, {}),
-    responses: RESPONSE_FIELDS.reduce((acc, key) => {
-      acc[key] = formData[key]?.trim() || '';
-      return acc;
-    }, {}),
-    agreements: AGREEMENT_FIELDS.reduce((acc, key) => {
-      acc[key] = Boolean(formData[key]);
-      return acc;
-    }, {}),
-  };
-}
-
-export async function getOrCreateApplication(user) {
+async function callSubmitFunction(body) {
   const client = requireSupabase();
-  const { data: existing, error: fetchError } = await client
-    .from('applications')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw fetchError;
-  }
-
-  if (existing) {
-    return existing;
-  }
-
-  const { data, error } = await client
-    .from('applications')
-    .insert({
-      user_id: user.id,
-      email: user.email,
-      status: 'incomplete',
-      school: portalConfig.allowedSchools[0],
-      level_of_study: portalConfig.levelsOfStudy[0],
-      graduation_year: portalConfig.graduationYears[1],
-      preferred_track: portalConfig.tracks[0],
-      links: {},
-      responses: {},
-      agreements: {},
-      team_emails: [],
-    })
-    .select('*')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function saveApplicationDraft(formData, application) {
-  const client = requireSupabase();
-  const payload = formToApplicationPayload(formData);
-
-  const { data, error } = await client
-    .from('applications')
-    .update(payload)
-    .eq('id', application.id)
-    .select('*')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function submitApplication(formData, application) {
-  const client = requireSupabase();
-
-  // Persist the latest draft content through the column-restricted update path,
-  // then flip status server-side. The RPC enforces ownership, the
-  // incomplete->submitted transition, and the deadline; applicants have no
-  // direct write access to `status`/`submitted_at`.
-  await saveApplicationDraft(formData, application);
-
-  const { data, error } = await client.rpc('submit_application', {
-    p_application_id: application.id,
+  const { data, error } = await client.functions.invoke(SUBMIT_FUNCTION, {
+    method: 'POST',
+    body,
   });
 
   if (error) {
-    throw error;
+    throw await toFunctionError(error);
   }
 
   return data;
 }
 
-export async function uploadResume(file, user, applicationId) {
+/**
+ * Uploads a resume without the browser ever holding a grant on the bucket.
+ *
+ * The function issues a signed URL for a path *it* chose, and the PDF then
+ * goes straight from the browser to storage. Routing a 10 MB file through the
+ * function instead would put it against the edge runtime's request limits for
+ * no benefit, and a client-chosen path would let a caller overwrite somebody
+ * else's resume.
+ *
+ * Returns the storage path to hand back at submit time.
+ */
+export async function uploadResume(file, turnstileToken) {
   const client = requireSupabase();
-  const extension = file.name.split('.').pop() || 'pdf';
-  const path = `${user.id}/${applicationId}/resume.${extension.toLowerCase()}`;
+  const { path, token } = await callSubmitFunction({
+    action: 'resume-upload-url',
+    turnstileToken,
+  });
 
-  const { error: uploadError } = await client.storage
+  const { error } = await client.storage
     .from(portalConfig.resumeBucket)
-    .upload(path, file, {
-      cacheControl: '3600',
+    .uploadToSignedUrl(path, token, file, {
       contentType: 'application/pdf',
-      upsert: true,
     });
 
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  const { data, error } = await client
-    .from('applications')
-    .update({ resume_path: path })
-    .eq('id', applicationId)
-    .select('*')
-    .single();
-
   if (error) {
-    throw error;
+    throw new ApplicationError(error.message || 'Resume upload failed.');
   }
 
-  return data;
+  return path;
 }
 
-export async function removeResume(applicationId, path) {
-  const client = requireSupabase();
+/**
+ * Submits an application. There is no draft on the server and no account
+ * behind it: this is the single write, and it is final.
+ *
+ * Resolves to `{ id, status, status_token, submitted_at }`. The status_token
+ * is what replaces "sign in to check your status" -- it is the only way back
+ * to this application, so the caller must show it to the applicant rather
+ * than only storing it.
+ */
+export async function submitApplication(formData, turnstileToken) {
+  const { application } = await callSubmitFunction({
+    action: 'submit',
+    turnstileToken,
+    form: formData,
+  });
 
-  if (path) {
-    const { error: removeError } = await client.storage
-      .from(portalConfig.resumeBucket)
-      .remove([path]);
+  return application;
+}
 
-    if (removeError) {
-      throw removeError;
+/**
+ * Reads one application back by its status token. Resolves to null when the
+ * token matches nothing, which is the case for a mistyped or truncated
+ * bookmark and should read as "we can't find that" rather than as an error.
+ */
+export async function fetchApplicationStatus(statusToken) {
+  try {
+    const { application } = await callSubmitFunction({
+      action: 'status',
+      statusToken,
+    });
+    return application;
+  } catch (error) {
+    if (error?.message === 'not found') {
+      return null;
     }
-  }
-
-  const { data, error } = await client
-    .from('applications')
-    .update({ resume_path: null })
-    .eq('id', applicationId)
-    .select('*')
-    .single();
-
-  if (error) {
     throw error;
   }
-
-  return data;
 }
+
+// --- Admin console ---------------------------------------------------------
+//
+// The admin path still authenticates, and deliberately so. It is a handful of
+// organizers rather than every applicant, they can use whatever address
+// actually receives mail, and the console reads every application there is --
+// which is exactly the surface that should sit behind a login.
 
 export async function listAdminApplications(filters = {}) {
   const client = requireSupabase();

@@ -142,19 +142,22 @@ function FormSection({ kicker, title, children }) {
 }
 
 export default function ApplicationForm({
-  application,
   formData,
   errors,
   readOnly,
   deadlinePassed,
-  saving,
   submitting,
   uploadingResume,
+  resumePath,
   onChange,
-  onSave,
   onSubmit,
   onResumeUpload,
   onResumeRemove,
+  // Rendered by the page, which owns the token because both submitting and
+  // uploading a resume need one. Kept out of this component so it stays
+  // presentational, the way every other control here is.
+  captcha = null,
+  captchaReady = true,
 }) {
   const [fileError, setFileError] = useState("");
   const fileInputRef = useRef(null);
@@ -214,11 +217,24 @@ export default function ApplicationForm({
             required
             value={formData.last_name}
           />
+          {/*
+            Typed, not displayed. This used to be a disabled mirror of the
+            signed-in account's address, because applying required an account.
+            It no longer does -- university mail systems were refusing or
+            burying the sign-in link, which stopped eligible students from
+            applying at all -- so the address is now something the applicant
+            enters, and the only handle the admissions team has on them.
+          */}
           <Field
-            disabled
-            label="Application Email"
+            disabled={disabled}
+            error={errors.email}
+            label="Email"
             name="email"
-            value={application?.email || ""}
+            onChange={handleChange}
+            placeholder="you@example.com"
+            required
+            type="email"
+            value={formData.email}
           />
           <Field
             disabled={disabled}
@@ -366,8 +382,8 @@ export default function ApplicationForm({
                 Optional PDF Resume
               </div>
               <p className="mt-2 text-sm text-on-surface-variant">
-                {application?.resume_path
-                  ? "Resume uploaded."
+                {resumePath
+                  ? "Resume attached."
                   : "Upload a PDF resume, 10 MB max."}
               </p>
               {fileError && (
@@ -392,7 +408,7 @@ export default function ApplicationForm({
                 <Upload size={14} />
                 {uploadingResume ? "Uploading..." : "Upload"}
               </button>
-              {application?.resume_path && (
+              {resumePath && (
                 <button
                   className="inline-flex items-center gap-2 rounded-full border border-rose-400/20 bg-rose-950/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-rose-300 transition-colors hover:bg-rose-950/20 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={disabled || uploadingResume}
@@ -538,21 +554,14 @@ export default function ApplicationForm({
                 ? "Your submitted application is locked."
                 : deadlinePassed
                   ? "The application deadline has passed."
-                  : "Save your draft anytime. Submit only when you are ready."}
+                  : "Submitting is final -- there is no editing afterwards. Your answers stay in this browser until you do."}
             </span>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              className="rounded-full border border-primary/30 bg-primary/5 px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={disabled || saving || submitting}
-              onClick={onSave}
-              type="button"
-            >
-              {saving ? "Saving..." : "Save Draft"}
-            </button>
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            {captcha}
             <button
               className="rounded-full bg-gradient-to-r from-cyber-blue to-primary-container px-8 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white shadow-glow-blue transition-all hover:scale-[1.01] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={disabled || saving || submitting}
+              disabled={disabled || submitting || !captchaReady}
               type="submit"
             >
               {submitting ? "Submitting..." : "Submit Application"}

@@ -12,7 +12,7 @@ import {
   normalizeIp,
   parseList,
   resolveAllowedOrigin,
-} from './identity.ts'
+} from '../_shared/identity.ts'
 
 const FACTIONS = ['utmist', 'watai'] as const
 type Faction = (typeof FACTIONS)[number]

@@ -1,5 +1,5 @@
 // Garbage-input matrix for the applicant portal's client-side validation and
-// payload builders. Runs offline. Tests marked `it.fails` document gaps found
+// for the row the server builds from it. Runs offline. Tests marked `it.fails` document gaps found
 // by the stress test: they assert the *desired* behaviour and are expected to
 // fail today. When you fix the gap, the test starts failing as "expected to
 // fail but passed" — flip it to a plain `it`.
@@ -8,10 +8,12 @@ import {
   getCompletionStats,
   validateApplication,
 } from './applicationValidation';
-import {
-  applicationRecordToForm,
-  formToApplicationPayload,
-} from './applicationService';
+// The row builder moved server-side when applying stopped requiring an
+// account: the browser now posts raw form data to an edge function, which is
+// the only writer. Importing the Deno module directly is the same trick
+// supabase/functions/_shared/identity.test.js uses -- it is plain TypeScript
+// with no Deno globals at module scope, so vitest can load it.
+import { toRow } from '../../supabase/functions/submit-application/application.ts';
 import {
   emptyApplicationForm,
   portalConfig,
@@ -24,6 +26,7 @@ function validForm(overrides = {}) {
     ...emptyApplicationForm,
     first_name: 'Ada',
     last_name: 'Lovelace',
+    email: 'ada@example.com',
     phone: '+1 647 555 0100',
     program: 'Computer Science',
     why_bots: 'Because.',
@@ -144,24 +147,28 @@ describe('validateApplication — teammate emails', () => {
 });
 
 describe('getCompletionStats', () => {
-  it('starts at 27% on a blank form (4 selects have defaults) and reaches 100%', () => {
-    // Finding: the dashboard shows "4 of 15 required fields complete" before
+  it('starts at 25% on a blank form (4 selects have defaults) and reaches 100%', () => {
+    // Finding: the dashboard shows "4 of 16 required fields complete" before
     // the applicant has typed anything, because school / level_of_study /
     // graduation_year / preferred_track are pre-selected.
+    //
+    // 16, not 15: `email` joined the required set when applying stopped
+    // requiring an account. It used to be copied from a verified JWT claim and
+    // shown as a disabled field, so it was never something to complete.
     expect(getCompletionStats(emptyApplicationForm)).toEqual({
       complete: 4,
-      total: 15,
-      percent: 27,
+      total: 16,
+      percent: 25,
     });
     expect(getCompletionStats(validForm())).toEqual({
-      complete: 15,
-      total: 15,
+      complete: 16,
+      total: 16,
       percent: 100,
     });
   });
 
   it('does not count whitespace-only answers as complete', () => {
-    expect(getCompletionStats(validForm({ why_bots: '  ' })).complete).toBe(14);
+    expect(getCompletionStats(validForm({ why_bots: '  ' })).complete).toBe(15);
   });
 
   it('survives an empty object (initial render before the record loads)', () => {
@@ -169,66 +176,66 @@ describe('getCompletionStats', () => {
   });
 });
 
-describe('formToApplicationPayload', () => {
-  it('never includes server-owned columns', () => {
-    const payload = formToApplicationPayload(validForm());
-    for (const key of [
-      'user_id',
-      'email',
-      'status',
-      'submitted_at',
-      'admin_notes',
-      'decided_at',
-      'decided_by',
-      'updated_at',
-      'resume_path',
-    ]) {
-      expect(payload).not.toHaveProperty(key);
-    }
+describe('toRow (the row the server actually inserts)', () => {
+  // The form is untrusted input now -- it arrives from a browser with no
+  // session behind it. Every column that decides anything must be set by the
+  // server regardless of what the form claims.
+  it('ignores server-owned columns supplied by the client', () => {
+    const row = toRow(
+      validForm({
+        status: 'admitted',
+        submitted_at: '2020-01-01T00:00:00Z',
+        admin_notes: 'let me in',
+        decided_by: 'me',
+        user_id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+      }),
+      new Date('2026-09-01T12:00:00Z'),
+    );
+    expect(row.status).toBe('submitted');
+    expect(row.submitted_at).toBe('2026-09-01T12:00:00.000Z');
+    expect(row).not.toHaveProperty('admin_notes');
+    expect(row).not.toHaveProperty('decided_by');
+    expect(row).not.toHaveProperty('user_id');
+  });
+
+  // applications_email_uniq indexes lower(email). Storing the typed casing
+  // while the index folds it would let 'A@x.ca' display as distinct from the
+  // 'a@x.ca' it collides with.
+  it('lowercases the email so it matches the index that enforces uniqueness', () => {
+    expect(toRow(validForm({ email: '  Ada@Example.COM ' })).email).toBe(
+      'ada@example.com',
+    );
   });
 
   it('trims links and stores empty ones as null', () => {
-    const payload = formToApplicationPayload(
+    const row = toRow(
       validForm({ github_url: '  https://github.com/ada ', linkedin_url: '   ' }),
     );
-    expect(payload.links.github_url).toBe('https://github.com/ada');
-    expect(payload.links.linkedin_url).toBeNull();
+    expect(row.links.github_url).toBe('https://github.com/ada');
+    expect(row.links.linkedin_url).toBeNull();
   });
 
   it('splits teammate emails on commas and drops blanks', () => {
     expect(
-      formToApplicationPayload(validForm({ teammate_emails: ' a@b.co ,, c@d.org , ' }))
-        .team_emails,
+      toRow(validForm({ teammate_emails: ' a@b.co ,, c@d.org , ' })).team_emails,
     ).toEqual(['a@b.co', 'c@d.org']);
   });
 
-  it('coerces agreements to booleans', () => {
-    const payload = formToApplicationPayload(validForm({ agree_privacy: 'yes' }));
-    expect(payload.agreements.agree_privacy).toBe(true);
-    expect(payload.agreements.agree_code_of_conduct).toBe(false);
+  it('coerces agreements to booleans rather than trusting truthiness', () => {
+    const row = toRow(validForm({ agree_privacy: 'yes' }));
+    expect(row.agreements.agree_privacy).toBe(false);
+    expect(row.agreements.agree_code_of_conduct).toBe(false);
   });
 
-  it('round-trips through applicationRecordToForm', () => {
-    const form = validForm({
-      github_url: 'https://github.com/ada',
-      teammate_emails: 'a@b.co, c@d.org',
-      joke: 'why',
-    });
-    const record = { ...formToApplicationPayload(form), id: 'x' };
-    expect(applicationRecordToForm(record)).toEqual(form);
+  it('stores a missing resume as null rather than an empty string', () => {
+    expect(toRow(validForm()).resume_path).toBeNull();
   });
 
-  it('applicationRecordToForm tolerates a record with null jsonb / arrays', () => {
-    const form = applicationRecordToForm({
-      id: 'x',
-      links: null,
-      responses: null,
-      agreements: null,
-      team_emails: null,
-    });
-    expect(form.github_url).toBe('');
-    expect(form.teammate_emails).toBe('');
-    expect(form.agree_privacy).toBe(false);
+  it('survives a form with non-string values in every field', () => {
+    const row = toRow({ email: 'a@b.co', links: 1, responses: null, first_name: 42 });
+    expect(row.first_name).toBe('');
+    expect(row.team_emails).toEqual([]);
+    expect(row.responses.why_bots).toBe('');
   });
 });
 

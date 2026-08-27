@@ -114,5 +114,10 @@ export function clearCapturedAuthError() {
  */
 export function authErrorLanding(pathname, error) {
   if (!error) return null;
-  return pathname === '/' ? '/apply' : null;
+  // /apply/admin, not /apply. Applying stopped requiring a sign-in link --
+  // that is precisely what was failing here -- so the only magic link this
+  // site still sends is the organizers' one, and dropping a dead-link notice
+  // on the applicant page would explain an error to people who can no longer
+  // encounter it.
+  return pathname === '/' ? '/apply/admin' : null;
 }
