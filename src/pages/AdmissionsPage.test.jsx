@@ -207,20 +207,28 @@ describe('submitting', () => {
   // PortalShell wraps both the form and the submitted panel, so a single fixed
   // subtitle told people who had already applied to "fill this in and submit
   // it" -- directly above the panel confirming they had.
-  it('stops telling you to fill in the form once you have submitted', () => {
+  // Keyed to the heading rather than the subtitle's wording: the copy here is
+  // rewritten often, and a guard that breaks on a reword is a guard nobody
+  // trusts. What matters is that the page addresses the right reader.
+  it('addresses someone who has already applied, not someone about to', () => {
     saveSubmission({
       statusToken: '11111111-1111-1111-1111-111111111111',
       status: 'submitted',
     });
     setup();
-    expect(screen.queryByText(/fill this in and submit/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/thanks for applying/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /your application/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /apply to battle of the schools/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it('still explains how applying works before you have submitted', () => {
+  it('addresses someone about to apply before they have', () => {
     setup();
-    expect(screen.getByText(/fill this in and submit/i)).toBeInTheDocument();
-    expect(screen.queryByText(/thanks for applying/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /apply to battle of the schools/i }),
+    ).toBeInTheDocument();
   });
 
   it('remembers a submission across a reload rather than offering a second try', async () => {

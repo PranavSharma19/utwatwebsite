@@ -336,7 +336,7 @@ export default function AdmissionsPage() {
       subtitle={
         submission
           ? 'Thanks for applying!'
-          : 'No account, no sign-in link, no waiting on email. Fill this in and submit it -- your answers stay in this browser until you do.'
+          : 'Good Luck! Your answers save in your browser.'
       }
       title={submission ? 'Your Application' : 'Apply to Battle of the Schools'}
     >
