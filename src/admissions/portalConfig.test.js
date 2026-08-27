@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { portalConfig, isDeadlinePassed, formatDeadline } from './portalConfig'
+import {
+  ALLOWED_OPTIONS,
+  ALLOWED_SCHOOLS,
+} from '../../supabase/functions/submit-application/application.ts'
 
 /**
  * The dates are the one part of this config that goes wrong silently. The
@@ -193,3 +197,36 @@ describe('server-side deadline', () => {
     ).toBe(true);
   });
 })
+
+// ---------------------------------------------------------------------------
+// The Edge Function cannot import from src/, so its ALLOWED_OPTIONS is a
+// hand-kept copy of the lists the form renders. Drift is not a cosmetic
+// problem: the server rejects anything not on its list, so a value added here
+// and not there turns into "Choose one of the listed options." on a dropdown
+// the applicant picked from correctly.
+// ---------------------------------------------------------------------------
+describe('option lists match the server copy', () => {
+  it.each([
+    ['level_of_study', 'levelsOfStudy'],
+    ['graduation_year', 'graduationYears'],
+    ['preferred_track', 'tracks'],
+    ['ml_skill_level', 'mlSkillLevels'],
+    ['hackathon_count', 'hackathonCounts'],
+  ])('%s matches portalConfig.%s', (serverField, configKey) => {
+    expect(ALLOWED_OPTIONS[serverField]).toEqual(portalConfig[configKey]);
+  });
+
+  it('covers every closed-option field the server enforces', () => {
+    expect(Object.keys(ALLOWED_OPTIONS).sort()).toEqual([
+      'graduation_year',
+      'hackathon_count',
+      'ml_skill_level',
+      'preferred_track',
+      'level_of_study',
+    ].sort());
+  });
+
+  it('school is enforced too, from its own list', () => {
+    expect(ALLOWED_SCHOOLS).toEqual(portalConfig.allowedSchools);
+  });
+});

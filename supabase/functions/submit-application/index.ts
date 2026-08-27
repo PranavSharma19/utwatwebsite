@@ -36,7 +36,13 @@ import {
   parseList,
   resolveAllowedOrigin,
 } from '../_shared/identity.ts'
-import { isDeadlinePassed, str, toRow, validate } from './application.ts'
+import {
+  STATUS_TOKEN_RE,
+  isDeadlinePassed,
+  str,
+  toRow,
+  validate,
+} from './application.ts'
 
 const ALLOWED_ORIGINS = parseList(Deno.env.get('ALLOWED_ORIGIN'))
 const TURNSTILE_EXPECTED_HOSTNAMES = parseList(
@@ -135,10 +141,18 @@ Deno.serve(async (req) => {
       if (typeof statusToken !== 'string' || !statusToken) {
         return json(cors, { error: 'missing token' }, 400)
       }
+      // Trimmed once and used for both the check and the query: a link copied
+      // out of a chat window routinely arrives with whitespace on it.
+      const token = statusToken.trim()
+      // Not a 400: the page renders 'not found' for a link it cannot resolve,
+      // and a mistyped token is exactly that. Also saves a round trip.
+      if (!STATUS_TOKEN_RE.test(token)) {
+        return json(cors, { error: 'not found' }, 404)
+      }
       const { data, error } = await admin
         .from('applications')
         .select('status, submitted_at, first_name, school, preferred_track')
-        .eq('status_token', statusToken)
+        .eq('status_token', token)
         .maybeSingle()
       if (error) throw error
       if (!data) return json(cors, { error: 'not found' }, 404)

@@ -29,6 +29,30 @@ export const ALLOWED_SCHOOLS = [
   'University of Waterloo',
 ]
 
+/**
+ * The other closed-option fields. `school` was checked from the start and
+ * these were not, so anything that skipped the form -- a tampered client, or
+ * curl with a live captcha token -- could put an arbitrary string into columns
+ * the reviewers sort and filter by.
+ *
+ * Literals rather than an import: an Edge Function cannot see src/. The copy
+ * in portalConfig.js is pinned to this one by portalConfig.test.js, because
+ * the failure mode of drift is rejecting real applicants.
+ */
+export const ALLOWED_OPTIONS: Record<string, string[]> = {
+  level_of_study: ['Undergraduate', 'Graduate', 'Recent graduate'],
+  graduation_year: ['2026', '2027', '2028', '2029', '2030', '2031+'],
+  preferred_track: [
+    'Machine Learning',
+    'Health and Life Sciences',
+    'Scientific ML and Simulations',
+    'Edge AI and Robotics',
+    'Open Innovation',
+  ],
+  ml_skill_level: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master'],
+  hackathon_count: ['0', '1', '2', '3', '4', '5+'],
+}
+
 export const REQUIRED_TEXT = [
   'first_name',
   'last_name',
@@ -92,10 +116,27 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // The shape submit-application itself issues in `resume-upload-url`, and the
 // only shape it will accept back. A client that could name its own path could
 // name somebody else's.
+/**
+ * status_token is a uuid column, so Postgres rejects anything that is not one
+ * -- and that rejection surfaced as a 500 "internal error". The status link is
+ * the only handle an applicant has on their application, so a bookmark that
+ * lost its last character told them the site was broken rather than that the
+ * link was wrong. Checked here instead, and treated as not-found: from the
+ * applicant's side a malformed link and an unknown one are the same event.
+ */
+export const STATUS_TOKEN_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export const RESUME_PATH_RE = /^[0-9a-f-]{36}\/resume\.pdf$/
 
 export function str(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
+  if (typeof value !== 'string') return ''
+  // Postgres text cannot hold U+0000 at all -- an insert carrying one fails
+  // and surfaces as a 500 -- and the other C0 controls are invisible in the
+  // admin console while still being stored. Tab, newline and carriage return
+  // survive: the essay fields legitimately contain them.
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
 }
 
 export function isDeadlinePassed(now: Date = new Date()): boolean {
@@ -124,6 +165,16 @@ export function validate(form: Record<string, unknown>): Record<string, string> 
 
   if (!ALLOWED_SCHOOLS.includes(str(form.school))) {
     errors.school = 'Applications are only open to selected schools for v1.'
+  }
+
+  // Empty is left to the REQUIRED_TEXT loop above: ml_skill_level and
+  // hackathon_count are genuinely optional, and flagging them as "not a listed
+  // option" when blank would invent an error the form cannot show.
+  for (const [field, options] of Object.entries(ALLOWED_OPTIONS)) {
+    const value = str(form[field])
+    if (value && !options.includes(value)) {
+      errors[field] = 'Choose one of the listed options.'
+    }
   }
 
   for (const [field, max] of Object.entries(MAX_LENGTHS)) {

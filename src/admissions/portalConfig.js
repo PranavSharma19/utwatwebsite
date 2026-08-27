@@ -39,6 +39,12 @@ export const portalConfig = {
     'Recent graduate',
   ],
   graduationYears: ['2026', '2027', '2028', '2029', '2030', '2031+'],
+  // These two lived inline in ApplicationForm's JSX, which left them the only
+  // closed-option fields the server could not pin against drift. The Edge
+  // Function keeps its own copy in ALLOWED_OPTIONS; portalConfig.test.js holds
+  // the two together.
+  mlSkillLevels: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master'],
+  hackathonCounts: ['0', '1', '2', '3', '4', '5+'],
   tracks: [
     'Machine Learning',
     'Health and Life Sciences',

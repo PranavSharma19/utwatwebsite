@@ -312,19 +312,23 @@ export default function ApplicationForm({
       </FormSection>
 
       <FormSection kicker="02 // Experience" title="Builder Profile">
+        <SelectField
+          disabled={disabled}
+          error={errors.preferred_track}
+          label="Preferred Track"
+          name="preferred_track"
+          onChange={handleChange}
+          options={portalConfig.tracks}
+          required
+          value={formData.preferred_track}
+        />
         <div className="grid gap-5 md:grid-cols-2">
           <SelectField
             disabled={disabled}
             label="ML Skill Level"
             name="ml_skill_level"
             onChange={handleChange}
-            options={[
-              "Beginner",
-              "Intermediate",
-              "Advanced",
-              "Expert",
-              "Master",
-            ]}
+            options={portalConfig.mlSkillLevels}
             value={formData.ml_skill_level}
           />
           <SelectField
@@ -332,7 +336,7 @@ export default function ApplicationForm({
             label="Hackathons Attended"
             name="hackathon_count"
             onChange={handleChange}
-            options={["0", "1", "2", "3", "4", "5+"]}
+            options={portalConfig.hackathonCounts}
             value={formData.hackathon_count}
           />
         </div>
@@ -436,20 +440,7 @@ export default function ApplicationForm({
         </div>
       </FormSection>
 
-      <FormSection kicker="03 // BOTS" title="Event Fit">
-        <SelectField
-          disabled={disabled}
-          error={errors.preferred_track}
-          label="Preferred Track"
-          name="preferred_track"
-          onChange={handleChange}
-          options={portalConfig.tracks}
-          required
-          value={formData.preferred_track}
-        />
-      </FormSection>
-
-      <FormSection kicker="04 // Short Answers" title="Application Questions">
+      <FormSection kicker="03 // Short Answers" title="Application Questions">
         <TextAreaField
           disabled={disabled}
           error={errors.why_bots}
@@ -495,7 +486,7 @@ export default function ApplicationForm({
         />
       </FormSection>
 
-      <FormSection kicker="05 // Agreements" title="Final Checks">
+      <FormSection kicker="04 // Agreements" title="Final Checks">
         <CheckboxField
           checked={formData.agree_privacy}
           disabled={disabled}
