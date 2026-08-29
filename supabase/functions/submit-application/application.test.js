@@ -24,7 +24,7 @@ function validForm(overrides = {}) {
     program: 'Computer Science',
     level_of_study: 'Undergraduate',
     graduation_year: '2027',
-    preferred_track: 'Machine Learning',
+    preferred_track: 'Healthcare',
     why_bots: 'Because.',
     project_story: 'A project.',
     future_build: 'A future.',

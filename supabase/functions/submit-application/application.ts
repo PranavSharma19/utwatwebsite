@@ -42,13 +42,7 @@ export const ALLOWED_SCHOOLS = [
 export const ALLOWED_OPTIONS: Record<string, string[]> = {
   level_of_study: ['Undergraduate', 'Graduate', 'Recent graduate'],
   graduation_year: ['2026', '2027', '2028', '2029', '2030', '2031+'],
-  preferred_track: [
-    'Machine Learning',
-    'Health and Life Sciences',
-    'Scientific ML and Simulations',
-    'Edge AI and Robotics',
-    'Open Innovation',
-  ],
+  preferred_track: ['Healthcare', 'Hardware', 'Web Agents'],
   ml_skill_level: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master'],
   hackathon_count: ['0', '1', '2', '3', '4', '5+'],
 }
