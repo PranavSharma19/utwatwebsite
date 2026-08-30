@@ -70,6 +70,16 @@ export default function TugOfWar() {
         own homepage losing. A share and a turnout say the same thing without
         printing a defeat.
       */}
+      {/*
+        Two big percentages under two "Vote <school>" buttons were read as
+        stats about the event itself -- who is applying, who is attending --
+        by more than one visitor. The numbers cannot say what they are a
+        share OF on their own, so the label does it, and it sits above both
+        of them rather than beside either one.
+      */}
+      <div className="mb-1.5 text-center font-mono text-[10px] uppercase tracking-[.2em] text-muted">
+        Share of the vote
+      </div>
       <div className="mb-2 flex items-end justify-between gap-4">
         <div className="text-left">
           <div className="font-mono text-[10px] tracking-[.24em] text-signal">

@@ -26,6 +26,20 @@ describe('TugOfWar', () => {
     })
   })
 
+  // Visitors asked what the two percentages were of -- applicants? attendees?
+  // The label answers it, and it answers it before the first vote lands too,
+  // when both numbers are still em dashes.
+  it('says what the percentages are a share of, in every state', async () => {
+    fetchTally.mockResolvedValue({ utmist: 75, watai: 25, reachable: true })
+    const { unmount } = setup()
+    await waitFor(() => expect(screen.getByText(/share of the vote/i)).toBeInTheDocument())
+    unmount()
+
+    fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
+    setup()
+    await waitFor(() => expect(screen.getByText(/share of the vote/i)).toBeInTheDocument())
+  })
+
   it('sits at an even split when nobody has cheered', async () => {
     fetchTally.mockResolvedValue({ utmist: 0, watai: 0, reachable: true })
     setup()
