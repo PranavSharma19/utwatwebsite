@@ -45,7 +45,7 @@ export const portalConfig = {
   // the two together.
   mlSkillLevels: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master'],
   hackathonCounts: ['0', '1', '2', '3', '4', '5+'],
-  tracks: ['Healthcare', 'Hardware', 'Web Agents'],
+  tracks: ['Healthcare', 'Robotics', 'Web Agents'],
   statuses: {
     incomplete: {
       label: 'Incomplete',
