@@ -42,7 +42,7 @@ const TRACKS = [
   {
     name: 'Healthcare',
     icon: HeartPulse,
-    partner: null,
+    partner: 'with Toralis Labs',
     blurb: 'Build AI solutions for real problems in healthcare.',
     prizes: [
       { place: '1st', tone: 'gold', items: ['Keychron V1 Max mechanical keyboard'] },
