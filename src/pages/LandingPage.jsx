@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import Starfield from '../components/Starfield';
 import Hero from '../components/Hero';
 import About from '../components/About';
+import Tracks from '../components/Tracks';
 import OrgSpotlight from '../components/OrgSpotlight';
 import Sponsors from '../components/Sponsors';
 import Faq from '../components/Faq';
@@ -24,6 +25,9 @@ export default function LandingPage() {
 
           {/* Core concept introduction */}
           <About />
+
+          {/* The three competition tracks and their prizes */}
+          <Tracks />
 
           {/* Host Organizations comparison stats showcase */}
           <OrgSpotlight />

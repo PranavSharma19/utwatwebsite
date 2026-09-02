@@ -6,6 +6,7 @@ import utmistLogoWithTextImg from "../assets/utmist-logo-with-text.png";
 
 const NAV_LINKS = [
   { name: "About", href: "#about" },
+  { name: "Tracks", href: "#tracks" },
   { name: "Organizers", href: "#organizations" },
   { name: "Sponsors", href: "#sponsors" },
   { name: "FAQ", href: "#faq" },
