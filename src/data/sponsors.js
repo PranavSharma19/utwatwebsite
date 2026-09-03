@@ -1,4 +1,5 @@
 import accentureLogo from "../assets/accenture-logo.svg";
+import anthropicLogo from "../assets/anthropic-logo.svg";
 import bracketbotLogo from "../assets/bracketbot-logo.svg";
 import cognitionLogo from "../assets/cognition-logo.svg";
 import shopifyLogo from "../assets/shopify-logo.svg";
@@ -61,6 +62,16 @@ export const sponsors = [
     // A compact 1.31:1 mark against wordmarks running 3.3:1 and wider. Matching
     // their heights would leave it looking undersized, so it runs taller.
     logoScale: 1.25,
+  },
+  {
+    name: "Anthropic",
+    logo: anthropicLogo,
+    url: "https://www.anthropic.com",
+    // An 8.9:1 wordmark, roughly twice as wide as anything else on the wall.
+    // At the shared cap height it would run past the card, so `max-w-full`
+    // binds it by width instead and logoScale has no effect. Kept at 1 so the
+    // height cap still applies if the card ever widens.
+    logoScale: 1,
   },
 ];
 
