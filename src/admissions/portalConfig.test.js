@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { portalConfig, isDeadlinePassed, formatDeadline } from './portalConfig'
+import { portalConfig, isDeadlinePassed, formatDeadline, rsvpBadgeKey, formatRsvpDeadline } from './portalConfig'
 import {
   ALLOWED_OPTIONS,
   ALLOWED_SCHOOLS,
 } from '../../supabase/functions/submit-application/application.ts'
+import { RSVP_DEADLINE, WAIVER_VERSION } from '../../supabase/functions/submit-application/rsvp.ts'
+import { participantWaiver } from '../legal/legalContent'
 
 /**
  * The dates are the one part of this config that goes wrong silently. The
@@ -230,3 +232,58 @@ describe('option lists match the server copy', () => {
     expect(ALLOWED_SCHOOLS).toEqual(portalConfig.allowedSchools);
   });
 });
+
+/**
+ * The RSVP deadline and the waiver version each exist in more than one place
+ * on purpose (the edge function cannot import src/). These hold the copies
+ * together, the way the application deadline is held above.
+ */
+describe('rsvp deadline', () => {
+  const rsvpDeadline = new Date(portalConfig.rsvpDeadlineIso)
+
+  it('parses, and is stated in Toronto time', () => {
+    expect(Number.isNaN(rsvpDeadline.getTime())).toBe(false)
+    expect(portalConfig.rsvpDeadlineIso).toMatch(/-0[45]:00$/)
+  })
+
+  it('falls after applications close and before the event starts', () => {
+    expect(rsvpDeadline.getTime()).toBeGreaterThan(deadline.getTime())
+    expect(rsvpDeadline.getTime()).toBeLessThan(eventStart.getTime())
+  })
+
+  it('matches the copy the edge function enforces', () => {
+    expect(new Date(RSVP_DEADLINE).toISOString()).toBe(rsvpDeadline.toISOString())
+  })
+
+  it('formats as the configured day in Toronto, not a shifted one', () => {
+    const [, , day] = portalConfig.rsvpDeadlineIso.slice(0, 10).split('-')
+    expect(formatRsvpDeadline(portalConfig.rsvpDeadlineIso)).toContain(String(Number(day)))
+  })
+})
+
+describe('waiver version', () => {
+  it('is one value in all three places', () => {
+    expect(WAIVER_VERSION).toBe(portalConfig.waiverVersion)
+    expect(participantWaiver.version).toBe(portalConfig.waiverVersion)
+  })
+
+  it('is a date, so the stored value on a row reads as "which wording"', () => {
+    expect(portalConfig.waiverVersion).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('rsvpBadgeKey', () => {
+  it('shows checked in ahead of attending', () => {
+    expect(rsvpBadgeKey({ rsvp_status: 'attending', checked_in_at: '2026-09-12T13:00:00Z' })).toBe('checked_in')
+    expect(rsvpBadgeKey({ rsvp_status: 'attending', checked_in_at: null })).toBe('attending')
+    expect(rsvpBadgeKey({ rsvp_status: 'declined' })).toBe('declined')
+    expect(rsvpBadgeKey({})).toBe('pending')
+  })
+
+  it('has a label and tone for every key it can return', () => {
+    for (const key of ['pending', 'attending', 'declined', 'checked_in']) {
+      expect(portalConfig.rsvpStatuses[key].label).toBeTruthy()
+      expect(portalConfig.rsvpStatuses[key].tone).toBeTruthy()
+    }
+  })
+})

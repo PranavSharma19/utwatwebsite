@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { privacyPolicy, termsOfService, legalDocuments } from './legalContent';
+import { privacyPolicy, termsOfService, legalDocuments, participantWaiver } from './legalContent';
 import { portalConfig } from '../admissions/portalConfig';
 import LegalPage from '../pages/LegalPage';
 
@@ -182,5 +182,18 @@ describe('policy links', () => {
       'utf8',
     );
     expect(form).toContain('policyLinks.privacy');
+  });
+
+  it('the waiver is routed and linked like the other two', () => {
+    expect(portalConfig.policyLinks.waiver).toBe(`/${participantWaiver.slug}`);
+    const app = readFileSync(join('src', 'App.jsx'), 'utf8');
+    expect(app).toContain(`path="${portalConfig.policyLinks.waiver}"`);
+  });
+
+  // The RSVP form must not render against placeholder text. statusView.js
+  // reads this flag; this pins that the flag exists and is a boolean.
+  it('the waiver declares whether it is still a placeholder', () => {
+    expect(typeof participantWaiver.placeholder).toBe('boolean');
+    expect(participantWaiver.version).toBe(portalConfig.waiverVersion);
   });
 });

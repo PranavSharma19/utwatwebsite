@@ -194,4 +194,39 @@ export const termsOfService = {
   ],
 };
 
-export const legalDocuments = [privacyPolicy, termsOfService];
+/**
+ * The participant waiver an admitted applicant accepts when they RSVP.
+ *
+ * `placeholder` is a real switch, not a note: while it is true the status page
+ * shows "RSVP opens shortly" instead of the form (src/admissions/statusView.js),
+ * which is the code-level form of the rule that no decision email goes out
+ * before the waiver is live. Flip it to false in its own commit, together with
+ * the final wording, and bump `version` in all three places if the wording
+ * changes again after anyone has accepted it.
+ */
+export const participantWaiver = {
+  slug: 'waiver',
+  title: 'Participant Waiver',
+  updated: portalConfig.waiverVersion,
+  version: portalConfig.waiverVersion,
+  placeholder: true,
+  intro: [
+    `PLACEHOLDER. The participant waiver for ${portalConfig.eventName} ${portalConfig.eventYear} (${portalConfig.eventDateRange}) is being finalised. The text below is a structural draft and is not the agreement you will be asked to accept.`,
+    `Questions about the waiver can be sent to ${portalConfig.contactEmail}.`,
+  ],
+  sections: [
+    {
+      heading: 'Eligibility',
+      paragraphs: [
+        `PLACEHOLDER. Participation is open to admitted applicants aged ${portalConfig.minimumAge} or over.`,
+      ],
+    },
+    { heading: 'Assumption of risk', paragraphs: ['PLACEHOLDER.'] },
+    { heading: 'Release and indemnity', paragraphs: ['PLACEHOLDER.'] },
+    { heading: 'Code of conduct', paragraphs: ['PLACEHOLDER.'] },
+    { heading: 'Photography and media', paragraphs: ['PLACEHOLDER.'] },
+    { heading: 'Emergency contact', paragraphs: ['PLACEHOLDER.'] },
+  ],
+};
+
+export const legalDocuments = [privacyPolicy, termsOfService, participantWaiver];

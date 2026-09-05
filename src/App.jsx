@@ -6,7 +6,7 @@ import AdmissionsPage from './pages/AdmissionsPage';
 import ApplicationStatusPage from './pages/ApplicationStatusPage';
 import LandingPage from './pages/LandingPage';
 import LegalPage from './pages/LegalPage';
-import { privacyPolicy, termsOfService } from './legal/legalContent';
+import { participantWaiver, privacyPolicy, termsOfService } from './legal/legalContent';
 import { portalConfig } from './admissions/portalConfig';
 
 export default function App() {
@@ -27,6 +27,7 @@ export default function App() {
           />
           <Route path="/privacy" element={<LegalPage document={privacyPolicy} />} />
           <Route path="/terms" element={<LegalPage document={termsOfService} />} />
+          <Route path="/waiver" element={<LegalPage document={participantWaiver} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
