@@ -133,6 +133,28 @@ export async function fetchApplicationStatus(statusToken) {
   }
 }
 
+/**
+ * An admitted applicant's one-shot RSVP. Resolves to the same shape `status`
+ * returns, already reflecting the answer. Throws ApplicationError: a
+ * `validation failed` reply carries fieldErrors keyed like the form; the other
+ * codes ('rsvp closed', 'already responded', 'underage', 'not admitted',
+ * 'not found') arrive as the message, which statusView.RSVP_ERROR_COPY maps
+ * to a sentence.
+ */
+export async function submitRsvp(statusToken, form) {
+  const { application } = await callSubmitFunction({
+    action: 'rsvp',
+    statusToken,
+    attending: form.attending === true,
+    dietaryRestrictions: form.dietary_restrictions,
+    emergencyContactName: form.emergency_contact_name,
+    emergencyContactPhone: form.emergency_contact_phone,
+    waiverAccepted: form.waiver_accepted === true,
+    rosterOptIn: form.roster_opt_in === true,
+  });
+  return application;
+}
+
 // --- Admin console ---------------------------------------------------------
 //
 // The admin path still authenticates, and deliberately so. It is a handful of
