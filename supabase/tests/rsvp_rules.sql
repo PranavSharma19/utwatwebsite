@@ -83,17 +83,31 @@ begin
 end $$;
 
 -- Rule 5: reverting the decision wipes everything.
+-- First, re-populate all RSVP fields with non-null values.
 update public.applications set
-  rsvp_status = 'declined', rsvp_at = now()
+  rsvp_status = 'attending', rsvp_at = now(),
+  dietary_restrictions = 'vegan', emergency_contact_name = 'Parent', emergency_contact_phone = '6475550100',
+  waiver_accepted_at = now(), waiver_version = '2026-09-08', roster_opt_in = true
 where email = 'rsvp-test@example.com';
+
+-- Check in the applicant.
+update public.applications set checked_in_at = now(), checked_in_by = 'door@example.com'
+where email = 'rsvp-test@example.com';
+
+-- Now revert the decision, which should wipe all RSVP and check-in state.
 update public.applications set status = 'waitlisted'
 where email = 'rsvp-test@example.com';
 
 do $$
 declare r record;
 begin
-  select rsvp_status, rsvp_at into r from public.applications where email = 'rsvp-test@example.com';
-  if r.rsvp_status <> 'pending' or r.rsvp_at is not null then
+  select rsvp_status, rsvp_at, dietary_restrictions, emergency_contact_name, emergency_contact_phone,
+         waiver_accepted_at, waiver_version, roster_opt_in, checked_in_at, checked_in_by
+    into r from public.applications where email = 'rsvp-test@example.com';
+  if r.rsvp_status <> 'pending' or r.rsvp_at is not null or r.dietary_restrictions is not null
+     or r.emergency_contact_name is not null or r.emergency_contact_phone is not null
+     or r.waiver_accepted_at is not null or r.waiver_version is not null or r.roster_opt_in is true
+     or r.checked_in_at is not null or r.checked_in_by is not null then
     raise exception 'FAIL rule 5: reverting the decision left an RSVP behind';
   end if;
 end $$;
