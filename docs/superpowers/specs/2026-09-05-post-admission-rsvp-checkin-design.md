@@ -273,7 +273,8 @@ endpoint:
   for rows with `status = 'admitted'`. This is the mail-merge input.
 - **Export attending**: adds `preferred_track, dietary_restrictions,
   emergency_contact_name, emergency_contact_phone, checked_in_at` for rows
-  with `rsvp_status = 'attending'`. This is the day-of sheet.
+  with `rsvp_status = 'attending'`, sorted by last name then first name.
+  This is the day-of sheet and, printed, the door clipboard.
 
 `status_url` is built from `window.location.origin`, so exporting from
 production yields production links.
@@ -303,6 +304,16 @@ Behaviour:
 Organizers at the door must be on the allowlist and signed in on their
 phones before September 12. A dry run on September 11 is part of the
 plan.
+
+### 6.5 Door fallback: the clipboard
+
+The QR is the fast path, not the only path. A printed copy of the
+attending export, sorted by last name, sits at the door. Anyone without
+their code is found by name, ticked on paper, and marked in the console
+via manual check-in (6.1) by an organizer with the console open. The
+console's applications table already supports search by name, so the
+manual path is: search, open row, Check in. Paper ticks that were not
+entered live are reconciled from the sheet after the rush.
 
 ## 7. Sequencing
 
