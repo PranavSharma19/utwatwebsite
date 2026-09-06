@@ -31,14 +31,19 @@ export const portalConfig = {
   // Bump together with rsvp.ts WAIVER_VERSION and participantWaiver.version.
   waiverVersion: '2026-09-06',
   minimumAge: 18,
-  // Both point at the same inbox: the event is student-run and there is no
-  // contact@ / sponsors@ alias behind it. They stay separate keys so a real
-  // sponsorship address can be split out later without hunting call sites.
+  // contactEmail is the event's own inbox, and the address the decision mail
+  // is sent FROM -- so a reply to any of it lands in one place the whole
+  // organising team can watch, rather than in one student's school account
+  // during the week they are least able to watch it.
+  //
+  // sponsorEmail deliberately still points at the personal address: sponsors
+  // are mid-thread there and moving it now would strand those conversations.
+  // Split it properly after the event.
   // These were 'contact@botu.ca' and 'sponsors@botu.ca' -- placeholders on a
   // domain this event does not own, which survived because nothing read
   // them: the two mailto links on the site hardcoded the real address
   // instead. They now read from here.
-  contactEmail: 'r342shar@uwaterloo.ca',
+  contactEmail: 'utwat.bots@gmail.com',
   sponsorEmail: 'r342shar@uwaterloo.ca',
   resumeBucket: 'resumes',
   maxResumeBytes: 10 * 1024 * 1024,

@@ -58,9 +58,13 @@ const MODE = 'draft';
 /** Which letter to send. See TEMPLATES below. */
 const TEMPLATE = 'admitted';
 
-/** Reply-to, and the name applicants see in their inbox. */
+/**
+ * Reply-to, and the name applicants see in their inbox. Same address the
+ * script sends from, which is where replies go anyway whatever the header
+ * says -- and it matches portalConfig.contactEmail on the site.
+ */
 const FROM_NAME = 'Battle of the Schools';
-const REPLY_TO = 'r342shar@uwaterloo.ca';
+const REPLY_TO = 'utwat.bots@gmail.com';
 
 /**
  * Rows to process in one run. Gmail's daily quota is per account (typically
@@ -91,7 +95,7 @@ Two things worth knowing:
 - The event is 18+. If you'll be under 18 on September 12, reply to this email instead of RSVPing and we'll sort it out.
 - If you can't make it, say so at the link anyway. It takes ten seconds and it moves someone off the waitlist.
 
-Questions: r342shar@uwaterloo.ca
+Questions: utwat.bots@gmail.com
 
 — the Battle of the Schools team`,
   },
@@ -146,7 +150,7 @@ You'll answer yes or no, give us an emergency contact and any dietary restrictio
 
 If you can't make it, telling us no is genuinely useful — it lets us reach the next person tonight rather than tomorrow.
 
-Questions, or the 24 hours won't work for you: r342shar@uwaterloo.ca
+Questions, or the 24 hours won't work for you: utwat.bots@gmail.com
 
 — the Battle of the Schools team`,
   },
