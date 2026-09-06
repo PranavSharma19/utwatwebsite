@@ -221,3 +221,28 @@ export async function createAdminResumeUrl(path) {
 
   return data.url;
 }
+
+async function callAdminFunction(body) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke(
+    portalConfig.adminFunctionName,
+    { method: 'POST', body },
+  );
+  if (error) {
+    throw await toFunctionError(error);
+  }
+  return data;
+}
+
+/**
+ * Door check-in. Resolves to `{ result, application }` where result is one of
+ * checked_in | already_checked_in | not_attending | not_found. These are
+ * outcomes, not errors: the scan page shows each in its own colour.
+ */
+export function checkInByToken(statusToken) {
+  return callAdminFunction({ action: 'checkin', statusToken });
+}
+
+export function checkInByEmail(email) {
+  return callAdminFunction({ action: 'checkin_by_email', email });
+}
