@@ -18,7 +18,10 @@ import { deriveStatusView } from '../admissions/statusView';
  * did not for @uwaterloo.ca and @utoronto.ca addresses. The endpoint behind
  * this returns the status columns plus RSVP state and nothing else, so a
  * shared or shoulder-surfed link discloses a first name, a school, a track, a
- * decision, and an RSVP, rather than a full application.
+ * decision, and an RSVP -- which, since STATUS_COLUMNS widened for RSVP, now
+ * also means the emergency contact's name and phone number and any dietary
+ * notes, all of which this page renders. Still a fair trade against a full
+ * application, but check this comment before assuming otherwise.
  */
 export default function ApplicationStatusPage() {
   const { token } = useParams();

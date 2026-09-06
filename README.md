@@ -112,6 +112,26 @@ Console additions (same admin path): RSVP column and filter, headcount strip,
    list and enter it later from the console (row → Check in manually).
 4. After the rush, reconcile paper ticks from the console.
 
+**Reset RSVP after the deadline has passed is a one-way door by itself.**
+The button's "they will need to RSVP again" is only true before
+`portalConfig.rsvpDeadlineIso` (or the applicant's 24-hour late-admit grace).
+Reset it after that and `rsvpGate` returns "rsvp closed" forever — no ticket,
+no waiver, and the check-in CHECK constraint won't even allow a manual
+check-in. **Recovery:** change the row's Decision Status to **Waitlisted**,
+save, then change it back to **Admitted** and save again. That re-stamps
+`decided_at`, which grants a fresh 24-hour RSVP window via
+`effectiveRsvpDeadline` (`rsvp.ts`) — the same mechanism a late admit gets.
+The trigger also clears any stale RSVP fields on the way through Waitlisted,
+so this works whether or not you've already pressed Reset RSVP.
+
+**Supabase Auth redirect-URL allowlist.** `AuthPanel.jsx` sends
+`emailRedirectTo` for the door page as `<origin>/ops/bots-triage-7f3a/checkin`
+— a path that did not exist before this branch. If the Supabase project's
+Auth → URL Configuration → Redirect URLs list is exact-match rather than
+wildcarded, add this path (and the production origin) before Sept 12, or
+every door organizer's magic link lands on the site root instead of the
+scan page.
+
 ### Pre-launch checklist and open work
 
 Nothing below has been done yet in this environment. It is the exact set of
@@ -164,12 +184,13 @@ earlier one is confirmed.
    there too:
 
    ```sql
-   select count(*) from applications where rsvp_status is not null;
+   select count(*) filter (where rsvp_status is not null), count(*) from applications;
    ```
 
-   Expect this to equal the total row count in `applications` — every row
-   gets a default `rsvp_status` from the migration, so `null` would mean the
-   migration did not actually apply to that table.
+   Expect the two numbers to be equal — every row gets a default
+   `rsvp_status` from the migration, so any gap between them (or an error
+   saying the column doesn't exist) means the migration did not actually
+   apply to that table.
 
 3. **Deploy both edge functions.** Neither has ever been deployed — no
    `supabase functions deploy` has been run at any point in this plan, by
@@ -190,7 +211,30 @@ earlier one is confirmed.
    npx supabase@latest functions deploy admin-applications
    ```
 
-4. **Run the Task 3 manual end-to-end check.** This needs a deployed
+4. **Deploy the frontend.** Nothing above ships the SPA itself, and it is
+   what carries the RSVP form, the ticket, the scan page, and the routes
+   this plan added — none of that reaches BOTS 2026 on its own. This repo is
+   a Vercel project already linked via `.vercel/project.json` (`vercel.json`
+   only adds the SPA rewrite; there is no separate build config or CI
+   workflow), so it deploys one of two ways:
+   - **Git push** to the branch the Vercel project's Git settings watch
+     (check the project's Settings → Git in the Vercel dashboard; it is
+     typically `main`). Pushing there triggers an automatic production
+     build and deploy — this is almost certainly how the live site
+     actually updates today, and it is why this step is easy to miss: it
+     looks like it "just happens."
+   - **`npx vercel deploy --prod`** from the repo root, if you need a
+     production deploy without merging (for example, to get Step 8's
+     phone walkthrough a real HTTPS URL ahead of a merge). Requires
+     `vercel login` once.
+
+   Either way, afterward confirm in the deployed build (not `npm run dev`)
+   that `/apply/status/<token>`, `<adminPath>`, and `<adminPath>/checkin`
+   all load — Step 5 below assumes "whatever build is live" already
+   reflects this branch, and that assumption is only true once this step
+   has actually run.
+
+5. **Run the Task 3 manual end-to-end check.** This needs a deployed
    `submit-application` (Step 3) and one test application admitted through
    the console. With `$SUPABASE_URL` and `$SUPABASE_ANON_KEY` set and
    `<token>` the admitted row's status token:
@@ -212,18 +256,19 @@ earlier one is confirmed.
    # repeat -> 409 { "error": "already responded" }
    ```
 
-5. **Confirm the waiver is still gated.** Admit a test application in the
+6. **Confirm the waiver is still gated.** Admit a test application in the
    console and open its status page. Expect "RSVP opens shortly", not an
    RSVP form — this confirms `participantWaiver.placeholder` is still `true`
-   in whatever build is live. **This placeholder is the single thing
-   standing between the shipped code and a working RSVP: while it is `true`,
-   no applicant can RSVP at all.** Flipping `participantWaiver.placeholder`
-   to `false` in `src/legal/legalContent.js`, once the real waiver text
-   replaces the structural draft, is a deliberate, separate commit — it was
-   explicitly out of scope for this plan and must not be done as part of
-   this checklist or bundled with any other change.
+   in whatever build is live (Step 4). **This placeholder is the single
+   thing standing between the shipped code and a working RSVP: while it is
+   `true`, no applicant can RSVP at all.** Flipping
+   `participantWaiver.placeholder` to `false` in `src/legal/legalContent.js`,
+   once the real waiver text replaces the structural draft, is a
+   deliberate, separate commit — it was explicitly out of scope for this
+   plan and must not be done as part of this checklist or bundled with any
+   other change.
 
-6. **Walk the RSVP → ticket → check-in loop on a local build only,
+7. **Walk the RSVP → ticket → check-in loop on a local build only,
    with the flip undone before committing anything.** Temporarily set
    `participantWaiver.placeholder` to `false` in a local checkout (do not
    commit this):
@@ -234,7 +279,7 @@ earlier one is confirmed.
      button) returns it to pending.
    - Revert the local `placeholder` edit. Do not commit the flip.
 
-7. **Two browser walkthroughs, never performed in this environment** for
+8. **Two browser walkthroughs, never performed in this environment** for
    want of an admin Supabase session:
    - **Admin console**: RSVP column and filter, headcount strip, manual
      check-in (row → Check in manually), undo check-in, and the two-step
@@ -245,7 +290,9 @@ earlier one is confirmed.
      string match, never by a click-through; a mismatch there fails
      silently, since React Router's catch-all just bounces the operator to
      the landing page with no error.
-   - **Door scan page, on a real phone with a real camera**, over HTTPS (or
+   - **Door scan page, on a real phone with a real camera** — do this dry
+     run by **Sept 11**, the day before doors open, so there is a day left
+     to fix whatever it finds. Over HTTPS (Step 4's deploy, or
      `npm run dev -- --host` plus a Vercel preview URL): camera permission
      and rear-camera selection, a real QR scan of a Task 6 ticket decoding
      through to a check-in, the green/yellow/red result overlay timing, the
@@ -253,9 +300,10 @@ earlier one is confirmed.
      via `AuthPanel` with the `<adminPath>/checkin` redirect. The scan
      page's camera path has zero automated coverage — jsdom has no camera
      APIs — so it is entirely unverified until someone points a phone at a
-     ticket.
+     ticket, and it is the single surface here with the most day-of
+     exposure.
 
-8. **Export Admitted opens in Sheets with a working `status_url` column.**
+9. **Export Admitted opens in Sheets with a working `status_url` column.**
    From the console, run **Export Admitted** and open the CSV in Google
    Sheets (or Excel); confirm the `status_url` column contains a working
    link to each applicant's `/apply/status/<token>` page.
