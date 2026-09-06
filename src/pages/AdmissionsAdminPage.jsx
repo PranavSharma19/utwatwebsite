@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Download,
   ExternalLink,
   Loader2,
+  QrCode,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -10,6 +12,8 @@ import {
 import AuthPanel from "../admissions/AuthPanel";
 import PortalShell from "../admissions/PortalShell";
 import StatusBadge from "../admissions/StatusBadge";
+import RsvpBadge from "../admissions/RsvpBadge";
+import RsvpSummary from "../admissions/admin/RsvpSummary.jsx";
 import {
   createAdminResumeUrl,
   listAdminApplications,
@@ -18,13 +22,15 @@ import {
 import {
   buildAdmittedCsv,
   buildApplicationsCsv,
+  buildAttendingCsv,
   downloadCsv,
 } from "../admissions/admin/exports";
-import { portalConfig } from "../admissions/portalConfig";
+import { portalConfig, rsvpBadgeKey } from "../admissions/portalConfig";
 import { supabase } from "../admissions/supabaseClient";
 import { useSupabaseSession } from "../admissions/useSupabaseSession";
 
 const statusOptions = Object.keys(portalConfig.statuses);
+const rsvpOptions = Object.keys(portalConfig.rsvpStatuses);
 
 function formatDate(value) {
   if (!value) {
@@ -80,6 +86,7 @@ function ApplicationDetail({
 }) {
   const [status, setStatus] = useState(application.status);
   const [adminNotes, setAdminNotes] = useState(application.admin_notes || "");
+  const [confirmReset, setConfirmReset] = useState(false);
 
   return (
     <aside className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/90 p-6 backdrop-blur-2xl lg:sticky lg:top-6">
@@ -160,6 +167,95 @@ function ApplicationDetail({
         )}
       </div>
 
+      {application.status === "admitted" && (
+        <div className="mt-6 space-y-4 border-t border-white/10 pt-6">
+          <div className="flex items-center justify-between">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-outline">
+              RSVP
+            </div>
+            <RsvpBadge application={application} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DetailText label="Responded">{formatDate(application.rsvp_at)}</DetailText>
+            <DetailText label="Waiver">
+              {application.waiver_accepted_at
+                ? `${application.waiver_version} · ${formatDate(application.waiver_accepted_at)}`
+                : null}
+            </DetailText>
+            <DetailText label="Emergency contact">
+              {application.emergency_contact_name
+                ? `${application.emergency_contact_name} · ${application.emergency_contact_phone}`
+                : null}
+            </DetailText>
+            <DetailText label="Dietary">{application.dietary_restrictions}</DetailText>
+            <DetailText label="Public roster">
+              {application.rsvp_status === "attending"
+                ? application.roster_opt_in ? "Opted in" : "Opted out"
+                : null}
+            </DetailText>
+            <DetailText label="Checked in">
+              {application.checked_in_at
+                ? `${formatDate(application.checked_in_at)} by ${application.checked_in_by}`
+                : null}
+            </DetailText>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {application.rsvp_status === "attending" && !application.checked_in_at && (
+              <button
+                className="rounded-full border border-primary/30 bg-primary/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 disabled:opacity-60"
+                disabled={updating}
+                onClick={() => onUpdate(application.id, { checked_in: true })}
+                type="button"
+              >
+                Check in manually
+              </button>
+            )}
+            {application.checked_in_at && (
+              <button
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-on-surface-variant hover:text-white disabled:opacity-60"
+                disabled={updating}
+                onClick={() => onUpdate(application.id, { checked_in: false })}
+                type="button"
+              >
+                Undo check-in
+              </button>
+            )}
+            {application.rsvp_status !== "pending" && !confirmReset && (
+              <button
+                className="rounded-full border border-rose-400/30 bg-rose-400/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-rose-300 hover:bg-rose-400/10"
+                onClick={() => setConfirmReset(true)}
+                type="button"
+              >
+                Reset RSVP
+              </button>
+            )}
+            {confirmReset && (
+              <>
+                <button
+                  className="rounded-full bg-rose-500/80 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white disabled:opacity-60"
+                  disabled={updating}
+                  onClick={() => {
+                    setConfirmReset(false);
+                    onUpdate(application.id, { rsvp_reset: true });
+                  }}
+                  type="button"
+                >
+                  Confirm reset — they will need to RSVP again
+                </button>
+                <button
+                  className="rounded-full border border-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-outline"
+                  onClick={() => setConfirmReset(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 space-y-5 border-t border-white/10 pt-6">
         {[
           ["Why BOTS", application.responses?.why_bots],
@@ -225,6 +321,7 @@ export default function AdmissionsAdminPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [schoolFilter, setSchoolFilter] = useState("all");
+  const [rsvpFilter, setRsvpFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [pageError, setPageError] = useState("");
   const [pageMessage, setPageMessage] = useState("");
@@ -242,6 +339,8 @@ export default function AdmissionsAdminPage() {
         statusFilter === "all" || application.status === statusFilter;
       const matchesSchool =
         schoolFilter === "all" || application.school === schoolFilter;
+      const matchesRsvp =
+        rsvpFilter === "all" || rsvpBadgeKey(application) === rsvpFilter;
       const matchesSearch =
         !search ||
         [
@@ -257,9 +356,9 @@ export default function AdmissionsAdminPage() {
           .toLowerCase()
           .includes(search);
 
-      return matchesStatus && matchesSchool && matchesSearch;
+      return matchesStatus && matchesSchool && matchesRsvp && matchesSearch;
     });
-  }, [applications, schoolFilter, searchTerm, statusFilter]);
+  }, [applications, rsvpFilter, schoolFilter, searchTerm, statusFilter]);
 
   const loadApplications = async () => {
     setLoadingApplications(true);
@@ -349,7 +448,7 @@ export default function AdmissionsAdminPage() {
       {configured && user && (
         <div className="space-y-6">
           <div className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/80 p-5 backdrop-blur-2xl">
-            <div className="grid gap-4 lg:grid-cols-[1fr_180px_240px_auto_auto_auto]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_repeat(3,minmax(0,auto))] xl:flex xl:flex-wrap">
               <label className="relative block">
                 <Search
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/60"
@@ -385,6 +484,19 @@ export default function AdmissionsAdminPage() {
                 {portalConfig.allowedSchools.map((school) => (
                   <option key={school} value={school}>
                     {school}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="rounded-xl border border-primary/10 bg-surface-container-lowest/90 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                onChange={(event) => setRsvpFilter(event.target.value)}
+                value={rsvpFilter}
+              >
+                <option value="all">All RSVPs</option>
+                {rsvpOptions.map((key) => (
+                  <option key={key} value={key}>
+                    {portalConfig.rsvpStatuses[key].label}
                   </option>
                 ))}
               </select>
@@ -425,8 +537,29 @@ export default function AdmissionsAdminPage() {
                 <Download size={14} />
                 Export Admitted
               </button>
+
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/5 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-300 hover:bg-emerald-400/10"
+                onClick={() =>
+                  downloadCsv("bots-attending.csv", buildAttendingCsv(applications))
+                }
+                type="button"
+              >
+                <Download size={14} />
+                Export Attending
+              </button>
+
+              <Link
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+                to={`${portalConfig.adminPath}/checkin`}
+              >
+                <QrCode size={14} />
+                Door Scan
+              </Link>
             </div>
           </div>
+
+          <RsvpSummary applications={applications} />
 
           {pageError && (
             <div className="flex items-center gap-3 rounded-2xl border border-rose-400/20 bg-rose-950/20 p-5 text-sm text-rose-100">
@@ -450,13 +583,14 @@ export default function AdmissionsAdminPage() {
               </div>
 
               <div className="max-h-[720px] overflow-auto">
-                <table className="w-full min-w-[760px] text-left text-sm">
+                <table className="w-full min-w-[880px] text-left text-sm">
                   <thead className="sticky top-0 bg-surface-container-lowest text-[10px] uppercase tracking-widest text-outline">
                     <tr>
                       <th className="px-5 py-3 font-mono">Applicant</th>
                       <th className="px-5 py-3 font-mono">School</th>
                       <th className="px-5 py-3 font-mono">Track</th>
                       <th className="px-5 py-3 font-mono">Status</th>
+                      <th className="px-5 py-3 font-mono">RSVP</th>
                       <th className="px-5 py-3 font-mono">Submitted</th>
                     </tr>
                   </thead>
@@ -486,6 +620,13 @@ export default function AdmissionsAdminPage() {
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={application.status} />
+                        </td>
+                        <td className="px-5 py-4">
+                          {application.status === "admitted" ? (
+                            <RsvpBadge application={application} />
+                          ) : (
+                            <span className="text-outline">-</span>
+                          )}
                         </td>
                         <td className="px-5 py-4 text-on-surface-variant">
                           {formatDate(application.submitted_at)}
