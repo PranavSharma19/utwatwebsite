@@ -4,10 +4,16 @@
 
 const UUID_RE_G = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
+/**
+ * A scan yields whatever the QR encoded -- the status URL -- and a typed
+ * fallback yields a bare token. Both carry exactly one uuid; take the first
+ * match so a query string appended after it (a tracking param, say) cannot
+ * override the real token. Mirrors extractStatusToken in checkin.ts.
+ */
 export function parseScannedToken(text) {
   if (typeof text !== 'string') return null;
   const matches = text.trim().match(UUID_RE_G);
-  return matches ? matches[matches.length - 1].toLowerCase() : null;
+  return matches ? matches[0].toLowerCase() : null;
 }
 
 const time = (value) =>
@@ -28,10 +34,18 @@ export function describeCheckin({ result, application }) {
         detail: `${fullName(application)} · ${application?.school ?? ''}`,
       };
     case 'already_checked_in':
+      // application?.checked_in_at can be null here: if the update in
+      // admin-applications/index.ts wins the race but the re-read that
+      // follows it fails, the handler falls back to the pre-update row,
+      // whose checked_in_at is still null. new Date(null) is the 1970
+      // epoch, so without this guard the door would show a bogus
+      // "7:00 p.m." instead of just omitting the time.
       return {
         tone: 'yellow',
         title: 'Already checked in',
-        detail: `${fullName(application)} · ${time(application.checked_in_at)}`,
+        detail: application?.checked_in_at
+          ? `${fullName(application)} · ${time(application.checked_in_at)}`
+          : `${fullName(application)} · ${application?.school ?? ''}`,
       };
     case 'not_attending':
       return {

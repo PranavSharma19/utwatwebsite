@@ -31,14 +31,15 @@ export type CheckinResult =
 
 /**
  * A scan yields whatever the QR encoded -- the status URL -- and a typed
- * fallback yields a bare token. Both carry exactly one uuid; take the last
- * match so a query string after it cannot confuse things.
+ * fallback yields a bare token. Both carry exactly one uuid; take the first
+ * match so a query string appended after it (a tracking param, say) cannot
+ * override the real token.
  */
 export function extractStatusToken(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const matches = raw.trim().match(UUID_RE_G)
   if (!matches || matches.length === 0) return null
-  return matches[matches.length - 1].toLowerCase()
+  return matches[0].toLowerCase()
 }
 
 export function checkinOutcome(row: CheckinRow | null): CheckinResult {

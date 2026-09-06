@@ -44,15 +44,17 @@ describe('csvEscape', () => {
 });
 
 describe('toCsv', () => {
-  it('joins headers and rows with newlines', () => {
-    expect(toCsv(['a', 'b'], [['1', '2']])).toBe('a,b\n"1","2"');
+  it('joins headers and rows with newlines, headers escaped like any other cell', () => {
+    expect(toCsv(['a', 'b'], [['1', '2']])).toBe('"a","b"\n"1","2"');
   });
 });
 
 describe('buildApplicationsCsv', () => {
   it('keeps the original column order', () => {
     const [header] = buildApplicationsCsv([app()]).split('\n');
-    expect(header).toBe('email,status,first_name,last_name,school,program,preferred_track,submitted_at,admin_notes');
+    expect(header).toBe(
+      '"email","status","first_name","last_name","school","program","preferred_track","submitted_at","admin_notes"',
+    );
   });
 });
 
@@ -63,7 +65,7 @@ describe('buildAdmittedCsv', () => {
       'https://utwat.ca',
     );
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('first_name,last_name,email,school,status_url');
+    expect(lines[0]).toBe('"first_name","last_name","email","school","status_url"');
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('"https://utwat.ca/apply/status/11111111-1111-1111-1111-111111111111"');
   });
@@ -84,7 +86,9 @@ describe('buildAttendingCsv', () => {
       app({ id: 'a2', email: 'no@no.ca', rsvp_status: 'declined' }),
     ]);
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('last_name,first_name,email,school,preferred_track,dietary_restrictions,emergency_contact_name,emergency_contact_phone,checked_in_at');
+    expect(lines[0]).toBe(
+      '"last_name","first_name","email","school","preferred_track","dietary_restrictions","emergency_contact_name","emergency_contact_phone","checked_in_at"',
+    );
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('vegan');
   });

@@ -34,6 +34,23 @@ describe('describeCheckin', () => {
     expect(out.detail).toMatch(/9:05/);
   });
 
+  // Lost-race fallback (admin-applications/index.ts): the update wins but the
+  // re-read fails, so checked_in_at comes back null on an otherwise valid
+  // application. Must not render the 1970 epoch as a real check-in time.
+  it('omits the time rather than showing the epoch when checked_in_at is null', () => {
+    const out = describeCheckin({
+      result: 'already_checked_in',
+      application: { ...ada, checked_in_at: null },
+    });
+    expect(out.tone).toBe('yellow');
+    expect(out.detail).toContain('Ada Lovelace');
+    expect(out.detail).not.toMatch(/1969|1970/);
+  });
+
+  it('does not throw when application itself is missing', () => {
+    expect(() => describeCheckin({ result: 'already_checked_in', application: null })).not.toThrow();
+  });
+
   it('is red for someone not attending, and for an unknown code', () => {
     expect(describeCheckin({ result: 'not_attending', application: ada }).tone).toBe('red');
     expect(describeCheckin({ result: 'not_attending', application: ada }).title).toMatch(/not attending/i);

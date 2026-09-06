@@ -13,7 +13,10 @@ export function csvEscape(value) {
 }
 
 export function toCsv(headers, rows) {
-  return [headers.join(','), ...rows.map((row) => row.map(csvEscape).join(','))].join('\n');
+  return [
+    headers.map(csvEscape).join(','),
+    ...rows.map((row) => row.map(csvEscape).join(',')),
+  ].join('\n');
 }
 
 const byName = (a, b) =>
