@@ -196,4 +196,31 @@ describe('policy links', () => {
     expect(typeof participantWaiver.placeholder).toBe('boolean');
     expect(participantWaiver.version).toBe(portalConfig.waiverVersion);
   });
+
+  // The flag and the text have to agree. A waiver marked live while draft
+  // wording is still in it would open the RSVP form against text nobody
+  // intended people to be bound by -- which is the exact failure the flag
+  // exists to prevent.
+  it('carries no draft wording once it is marked live', () => {
+    if (participantWaiver.placeholder) return;
+    const body = [
+      ...participantWaiver.intro,
+      ...participantWaiver.sections.flatMap((s) => [s.heading, ...s.paragraphs]),
+    ].join('\n');
+    expect(body).not.toMatch(/PLACEHOLDER|TBD|\[Organi[sz]ation/i);
+    expect(participantWaiver.sections.length).toBeGreaterThanOrEqual(5);
+    for (const section of participantWaiver.sections) {
+      expect(section.paragraphs.length).toBeGreaterThan(0);
+    }
+  });
+
+  // The event is 18+ and the server enforces it, so the waiver must not carry
+  // a guardian-consent path that no applicant can ever reach.
+  it('offers no under-18 guardian path', () => {
+    const body = participantWaiver.sections
+      .flatMap((s) => s.paragraphs)
+      .join('\n');
+    expect(body).not.toMatch(/guardian/i);
+    expect(body).toContain(String(portalConfig.minimumAge));
+  });
 });

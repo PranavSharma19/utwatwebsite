@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { participantWaiver } from '../legal/legalContent';
 import { deriveStatusView } from './statusView';
 
 const DEADLINE = '2026-09-11T03:59:00.000Z';
@@ -52,8 +53,16 @@ describe('deriveStatusView', () => {
   });
 
   it('reads the waiver flag by default', () => {
-    // participantWaiver.placeholder is true in this plan; the default must
-    // therefore hold the form rather than open it.
-    expect(deriveStatusView(admitted(), before)).toBe('rsvp-waiting');
+    // Pins the wiring, not the flag's current value: calling without the
+    // third argument must agree with passing !participantWaiver.placeholder
+    // explicitly, so flipping the waiver live (or back) needs no test edit.
+    // The two branches themselves are covered by the explicit-true and
+    // explicit-false cases above.
+    expect(deriveStatusView(admitted(), before)).toBe(
+      deriveStatusView(admitted(), before, !participantWaiver.placeholder),
+    );
+    expect(deriveStatusView(admitted(), before)).toBe(
+      participantWaiver.placeholder ? 'rsvp-waiting' : 'rsvp-open',
+    );
   });
 });

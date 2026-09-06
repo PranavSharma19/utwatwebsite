@@ -84,9 +84,15 @@ see the comment on `faction_cheers_visitor_uniq` in the migration for why.
 Design: `docs/superpowers/specs/2026-09-05-post-admission-rsvp-checkin-design.md`.
 
 An admitted applicant RSVPs from their status link (`/apply/status/<token>`).
-The form only renders once `participantWaiver.placeholder` in
-`src/legal/legalContent.js` is `false`; flipping it is the "waiver is live"
-switch, and no decision email should go out before it. RSVPs close at
+The form only renders while `participantWaiver.placeholder` in
+`src/legal/legalContent.js` is `false` — the "waiver is live" switch, now
+flipped, with the final wording in the same file. Setting it back to `true`
+closes RSVPs site-wide without a deploy of anything else, which is the lever
+to pull if the wording has to be pulled back. Whenever the wording changes
+after anyone has accepted it, bump the version in all three places
+(`participantWaiver.version`, `portalConfig.waiverVersion`, and
+`WAIVER_VERSION` in `supabase/functions/submit-application/rsvp.ts`) so each
+stored acceptance still names the text that was accepted. RSVPs close at
 `portalConfig.rsvpDeadlineIso`; anyone admitted after that gets 24 hours.
 
 Deploy:
@@ -256,28 +262,23 @@ earlier one is confirmed.
    # repeat -> 409 { "error": "already responded" }
    ```
 
-6. **Confirm the waiver is still gated.** Admit a test application in the
-   console and open its status page. Expect "RSVP opens shortly", not an
-   RSVP form — this confirms `participantWaiver.placeholder` is still `true`
-   in whatever build is live (Step 4). **This placeholder is the single
-   thing standing between the shipped code and a working RSVP: while it is
-   `true`, no applicant can RSVP at all.** Flipping
-   `participantWaiver.placeholder` to `false` in `src/legal/legalContent.js`,
-   once the real waiver text replaces the structural draft, is a
-   deliberate, separate commit — it was explicitly out of scope for this
-   plan and must not be done as part of this checklist or bundled with any
-   other change.
+6. **Read `/waiver` on the deployed site.** It must show the real wording,
+   not a draft, and its "Last updated" must match `portalConfig.waiverVersion`.
+   This is the text applicants are legally accepting, and Step 7 is the first
+   moment anyone can be bound by it — so read it on the live build, in a
+   logged-out browser, before you send a single decision email.
 
-7. **Walk the RSVP → ticket → check-in loop on a local build only,
-   with the flip undone before committing anything.** Temporarily set
-   `participantWaiver.placeholder` to `false` in a local checkout (do not
-   commit this):
-   - RSVP yes on the status page → get a ticket with a QR code.
+7. **Walk the RSVP → ticket → check-in loop against the deployed site.**
+   Admit a test application in the console and open its status page:
+   - The RSVP form renders (not "RSVP opens shortly"). If it says the latter,
+     the build that is live still has `participantWaiver.placeholder` as
+     `true` — redeploy the frontend (Step 4).
+   - RSVP yes → get a ticket with a QR code.
    - Scan the ticket at `<adminPath>/checkin` → reads green ("Checked in").
    - Scan it again → reads yellow ("Already checked in").
    - In the console, the row shows Checked In; **Reset RSVP** (the two-step
      button) returns it to pending.
-   - Revert the local `placeholder` edit. Do not commit the flip.
+   - Delete the test application before decisions go out.
 
 8. **Two browser walkthroughs, never performed in this environment** for
    want of an admin Supabase session:
