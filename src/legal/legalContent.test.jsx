@@ -38,6 +38,34 @@ describe('legal documents', () => {
     }
   });
 
+  // A route written into the prose has to be reachable. Before this, the
+  // waiver's pointer at the code of conduct rendered as the literal text
+  // "/code-of-conduct" -- correct, and useless to a reader.
+  it('turns a policy route in the prose into a real link', () => {
+    renderDoc(participantWaiver);
+    const link = screen.getByRole('link', {
+      name: portalConfig.policyLinks.codeOfConduct,
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      portalConfig.policyLinks.codeOfConduct,
+    );
+  });
+
+  // The rendered documents use em dashes; a literal double hyphen is the
+  // repo's *comment* style leaking into prose a participant reads.
+  it('uses em dashes in prose, not double hyphens', () => {
+    for (const doc of legalDocuments) {
+      const prose = [
+        ...doc.intro,
+        ...doc.sections.flatMap((s) => [...s.paragraphs, ...(s.bullets ?? [])]),
+      ];
+      for (const text of prose) {
+        expect(text, `in ${doc.slug}`).not.toContain(' -- ');
+      }
+    }
+  });
+
   it('carries a machine-readable last-updated date', () => {
     for (const doc of legalDocuments) {
       expect(doc.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);

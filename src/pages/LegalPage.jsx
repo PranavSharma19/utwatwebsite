@@ -1,6 +1,42 @@
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import Starfield from '../components/Starfield';
 import Footer from '../components/Footer';
+import { portalConfig } from '../admissions/portalConfig';
+
+// Longest first, so '/code-of-conduct' is matched whole rather than by a
+// shorter route that happens to prefix it.
+const POLICY_ROUTES = Object.values(portalConfig.policyLinks).sort(
+  (a, b) => b.length - a.length,
+);
+const ROUTE_RE = new RegExp(
+  `(${POLICY_ROUTES.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  'g',
+);
+
+/**
+ * One document referring to another is the whole point of a policy set: the
+ * waiver binds acceptors to the code of conduct, and someone reading it needs
+ * to get there. The content is plain strings, so rather than give every
+ * paragraph a markup format, any policy route written in the prose becomes a
+ * real link. A bare "/code-of-conduct" sitting in a sentence is not something
+ * a reader can act on.
+ */
+function withLinks(text) {
+  const parts = text.split(ROUTE_RE);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    POLICY_ROUTES.includes(part) ? (
+      // eslint-disable-next-line react/no-array-index-key
+      <Link className="text-accent underline" key={i} to={part}>
+        {part}
+      </Link>
+    ) : (
+      // eslint-disable-next-line react/no-array-index-key
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  );
+}
 
 /**
  * Renders either legal document. Both have the same shape, so they share a
@@ -43,7 +79,7 @@ export default function LegalPage({ document: doc }) {
                 key={paragraph.slice(0, 40)}
                 className="mt-5 text-[15px] leading-relaxed text-on-surface-variant"
               >
-                {paragraph}
+                {withLinks(paragraph)}
               </p>
             ))}
 
@@ -57,7 +93,7 @@ export default function LegalPage({ document: doc }) {
                     key={paragraph.slice(0, 40)}
                     className="mt-4 text-[15px] leading-relaxed text-on-surface-variant"
                   >
-                    {paragraph}
+                    {withLinks(paragraph)}
                   </p>
                 ))}
                 {section.bullets && (
@@ -67,7 +103,7 @@ export default function LegalPage({ document: doc }) {
                         key={bullet.slice(0, 40)}
                         className="list-disc text-[15px] leading-relaxed text-on-surface-variant marker:text-accent"
                       >
-                        {bullet}
+                        {withLinks(bullet)}
                       </li>
                     ))}
                   </ul>

@@ -56,7 +56,7 @@ export const privacyPolicy = {
       heading: 'The school poll',
       paragraphs: [
         'Voting in the UofT versus Waterloo poll does not require an account and does not identify you.',
-        'We record only which school was picked and when. No identifier of any kind is stored against a vote -- not your IP address, not a hash of it, not a cookie. Your browser remembers your own choice so the page can show it back to you; that never leaves your device.',
+        'We record only which school was picked and when. No identifier of any kind is stored against a vote — not your IP address, not a hash of it, not a cookie. Your browser remembers your own choice so the page can show it back to you; that never leaves your device.',
         'Cloudflare Turnstile runs on the vote and application forms to distinguish people from bots. Cloudflare receives your IP address and basic browser information as part of that check, under their own privacy terms. Our own server sees your IP address for the length of the request, to pass to that check and to limit floods, and does not store it.',
       ],
     },
@@ -309,7 +309,7 @@ export const codeOfConduct = {
   updated: portalConfig.waiverVersion,
   intro: [
     `${portalConfig.eventName} ${portalConfig.eventYear} (${portalConfig.eventDateRange}) is a place to build something with people you have not met before. That only works if everyone can expect to be treated decently, so these are the rules, and they are enforced.`,
-    `This applies to everyone at the Event -- participants, organisers, volunteers, mentors, judges, and sponsors alike -- and it applies wherever the Event is happening: the venue, any online space we run for it, and the submission platform.`,
+    `This applies to everyone at the Event — participants, organisers, volunteers, mentors, judges, and sponsors alike — and it applies wherever the Event is happening: the venue, any online space we run for it, and the submission platform.`,
   ],
   sections: [
     {
@@ -341,7 +341,7 @@ export const codeOfConduct = {
     {
       heading: 'Reporting something',
       paragraphs: [
-        `If something happens to you, or you see it happen to someone else, tell any organiser at the Event -- they are the people who can act on it right then -- or email ${portalConfig.contactEmail}. Either route reaches the organising team.`,
+        `If something happens to you, or you see it happen to someone else, tell any organiser at the Event — they are the people who can act on it right then — or email ${portalConfig.contactEmail}. Either route reaches the organising team.`,
         'You can report something without knowing whether it "counts". Deciding that is our job, not yours. You will not be asked to confront the other person, and you will not be told to work it out between yourselves.',
         'We will take it seriously, we will not share your name more widely than we need to in order to act, and we will tell you what we did. If you would rather report something after the Event, the email address above still works.',
       ],
