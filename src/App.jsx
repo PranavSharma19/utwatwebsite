@@ -4,6 +4,7 @@ import { FactionProvider } from './faction/FactionContext';
 import AdmissionsAdminPage from './pages/AdmissionsAdminPage';
 import AdmissionsPage from './pages/AdmissionsPage';
 import ApplicationStatusPage from './pages/ApplicationStatusPage';
+import CheckInPage from './pages/CheckInPage';
 import LandingPage from './pages/LandingPage';
 import LegalPage from './pages/LegalPage';
 import { participantWaiver, privacyPolicy, termsOfService } from './legal/legalContent';
@@ -25,6 +26,7 @@ export default function App() {
             path={portalConfig.adminPath}
             element={<AdmissionsAdminPage />}
           />
+          <Route path={`${portalConfig.adminPath}/checkin`} element={<CheckInPage />} />
           <Route path="/privacy" element={<LegalPage document={privacyPolicy} />} />
           <Route path="/terms" element={<LegalPage document={termsOfService} />} />
           <Route path="/waiver" element={<LegalPage document={participantWaiver} />} />
