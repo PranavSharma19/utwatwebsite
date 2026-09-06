@@ -13,6 +13,11 @@ import AuthPanel from "../admissions/AuthPanel";
 import PortalShell from "../admissions/PortalShell";
 import StatusBadge from "../admissions/StatusBadge";
 import RsvpBadge from "../admissions/RsvpBadge";
+// The .jsx here is load-bearing: `admissions/admin/` also has a rsvpSummary.js
+// (Task 9's summarizeRsvps, no default export). On a case-insensitive
+// filesystem an extensionless import of "RsvpSummary" resolves to that file
+// instead of this component and `vite build` fails with a missing default
+// export -- `npm test` does not catch it. Do not "clean up" this extension.
 import RsvpSummary from "../admissions/admin/RsvpSummary.jsx";
 import {
   createAdminResumeUrl,
@@ -339,8 +344,14 @@ export default function AdmissionsAdminPage() {
         statusFilter === "all" || application.status === statusFilter;
       const matchesSchool =
         schoolFilter === "all" || application.school === schoolFilter;
+      // rsvpBadgeKey defaults to 'pending' for any application, admitted or
+      // not, since non-admitted rows have no rsvp_status. Gate on
+      // status === "admitted" too so "RSVP Pending" here matches
+      // summarizeRsvps' admitted-only headcount above the table.
       const matchesRsvp =
-        rsvpFilter === "all" || rsvpBadgeKey(application) === rsvpFilter;
+        rsvpFilter === "all" ||
+        (application.status === "admitted" &&
+          rsvpBadgeKey(application) === rsvpFilter);
       const matchesSearch =
         !search ||
         [
