@@ -60,8 +60,8 @@
  * The spreadsheet the roster lives in, and the tab inside it. Taken from the
  * sheet URL: docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
  */
-const SPREADSHEET_ID = '166_Za2FmXlGUBF0uMyPb04RCmkV5g7HUFBkTWHZLACs';
-const SHEET_NAME = 'bots-admitted-mail-merge';
+const SPREADSHEET_ID = '1Zw3E_Y1mQwdxV78uFhA_9abU3-l7Yz7WGTTMwTdP8Co';
+const SHEET_NAME = 'bots-admitted-mail-merge-2';
 
 /** 'draft' writes Gmail drafts and sends nothing. 'send' sends for real. */
 const MODE = 'draft';
@@ -332,7 +332,16 @@ function report(message) {
   return message;
 }
 
-/** Run this first. Sends nothing, touches nothing, prints what it can see. */
+/**
+ * Run this first. Sends nothing, writes nothing.
+ *
+ * Counting rows is not enough. The failure that matters is a row that looks
+ * fine and merges to a dead link: the recipient opens it, reads "No
+ * application found", and concludes they were rejected. They do not write in
+ * to check. So this checks every row the way the roster was checked before it
+ * ever reached the sheet -- shape of the link, no blanks, no duplicates --
+ * and names the row numbers of anything wrong.
+ */
 function preflight() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
@@ -342,19 +351,57 @@ function preflight() {
         ss.getSheets().map((t) => t.getName()).join(', '),
     );
   }
+
   const values = sheet.getDataRange().getValues();
   const header = values[0].map(String);
   const missing = ['first_name', 'email', 'status_url'].filter(
     (c) => header.indexOf(c) === -1,
   );
-  const rows = values.length - 1;
+  if (missing.length) return report(`MISSING COLUMNS: ${missing.join(', ')}`);
+
+  const iFirst = header.indexOf('first_name');
+  const iEmail = header.indexOf('email');
+  const iUrl = header.indexOf('status_url');
+
+  const linkRe = /^https:\/\/www\.utwat\.ca\/apply\/status\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const problems = [];
+  const seenEmail = {};
+  const seenUrl = {};
+  let rows = 0;
+
+  for (let r = 1; r < values.length; r++) {
+    const first = String(values[r][iFirst] || '').trim();
+    const email = String(values[r][iEmail] || '').trim();
+    const url = String(values[r][iUrl] || '').trim();
+    if (!first && !email && !url) continue; // trailing blank row
+    rows++;
+    const at = `row ${r + 1}`;
+    if (!first) problems.push(`${at}: no first_name`);
+    if (!email) problems.push(`${at}: no email`);
+    else if (email.indexOf('@') === -1) problems.push(`${at}: bad email`);
+    if (!url) problems.push(`${at}: no status_url`);
+    else if (!linkRe.test(url)) problems.push(`${at}: status_url not a www.utwat.ca status link`);
+    const ek = email.toLowerCase();
+    if (ek && seenEmail[ek]) problems.push(`${at}: duplicate email, also ${seenEmail[ek]}`);
+    else if (ek) seenEmail[ek] = at;
+    if (url && seenUrl[url]) problems.push(`${at}: duplicate link, also ${seenUrl[url]}`);
+    else if (url) seenUrl[url] = at;
+  }
+
+  const log = ss.getSheetByName(LOG_SHEET);
+  const alreadyLogged = log ? Math.max(0, log.getLastRow() - 1) : 0;
   const quota = MailApp.getRemainingDailyQuota();
+
   return report(
-    `Sheet "${SHEET_NAME}" — ${rows} data row(s). ` +
-      `Columns: ${header.join(', ')}. ` +
-      (missing.length ? `MISSING: ${missing.join(', ')}. ` : 'All required columns present. ') +
-      `Sending as: ${Session.getActiveUser().getEmail()}. ` +
-      `Gmail recipients left today: ${quota}` +
-      (quota < rows ? ` — NOT ENOUGH for ${rows} rows.` : ' — enough.'),
+    `TAB: ${SHEET_NAME}\n` +
+      `ROWS: ${rows}\n` +
+      `COLUMNS: ${header.join(', ')}\n` +
+      `SENDING AS: ${Session.getActiveUser().getEmail()}\n` +
+      `ALREADY IN sent_log: ${alreadyLogged}\n` +
+      `GMAIL RECIPIENTS LEFT TODAY: ${quota} ` +
+      (quota >= rows ? '(enough)' : `(NOT ENOUGH for ${rows})`) + '\n' +
+      (problems.length
+        ? `PROBLEMS (${problems.length}):\n  ` + problems.join('\n  ')
+        : 'DATA: every row has a name, an email, and a unique well-formed status link.'),
   );
 }
