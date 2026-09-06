@@ -15,6 +15,11 @@ import {
   listAdminApplications,
   updateAdminApplication,
 } from "../admissions/applicationService";
+import {
+  buildAdmittedCsv,
+  buildApplicationsCsv,
+  downloadCsv,
+} from "../admissions/admin/exports";
 import { portalConfig } from "../admissions/portalConfig";
 import { supabase } from "../admissions/supabaseClient";
 import { useSupabaseSession } from "../admissions/useSupabaseSession";
@@ -51,48 +56,6 @@ function safeHref(value) {
   }
 
   return null;
-}
-
-function csvEscape(value) {
-  let text = value == null ? "" : String(value);
-  // Neutralize spreadsheet formula injection: a leading =, +, -, @, tab, or CR
-  // can execute when the export is opened in Excel/Sheets.
-  if (/^[=+\-@\t\r]/.test(text)) {
-    text = `'${text}`;
-  }
-  return `"${text.replaceAll('"', '""')}"`;
-}
-
-function buildCsv(applications) {
-  const headers = [
-    "email",
-    "status",
-    "first_name",
-    "last_name",
-    "school",
-    "program",
-    "preferred_track",
-    "submitted_at",
-    "admin_notes",
-  ];
-
-  const rows = applications.map((application) =>
-    headers.map((header) => csvEscape(application[header])).join(","),
-  );
-
-  return [headers.join(","), ...rows].join("\n");
-}
-
-function downloadCsv(applications) {
-  const blob = new Blob([buildCsv(applications)], {
-    type: "text/csv;charset=utf-8",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "bots-applications.csv";
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 function DetailText({ label, children }) {
@@ -386,7 +349,7 @@ export default function AdmissionsAdminPage() {
       {configured && user && (
         <div className="space-y-6">
           <div className="glass-panel rounded-3xl border border-primary/10 bg-surface-container-lowest/80 p-5 backdrop-blur-2xl">
-            <div className="grid gap-4 lg:grid-cols-[1fr_180px_240px_auto_auto]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_180px_240px_auto_auto_auto]">
               <label className="relative block">
                 <Search
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/60"
@@ -437,11 +400,30 @@ export default function AdmissionsAdminPage() {
 
               <button
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-secondary-fixed/30 bg-secondary-fixed/5 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-secondary-fixed hover:bg-secondary-fixed/10"
-                onClick={() => downloadCsv(filteredApplications)}
+                onClick={() =>
+                  downloadCsv(
+                    "bots-applications.csv",
+                    buildApplicationsCsv(filteredApplications),
+                  )
+                }
                 type="button"
               >
                 <Download size={14} />
                 Export CSV
+              </button>
+
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/5 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-300 hover:bg-emerald-400/10"
+                onClick={() =>
+                  downloadCsv(
+                    "bots-admitted-mail-merge.csv",
+                    buildAdmittedCsv(applications, window.location.origin),
+                  )
+                }
+                type="button"
+              >
+                <Download size={14} />
+                Export Admitted
               </button>
             </div>
           </div>
