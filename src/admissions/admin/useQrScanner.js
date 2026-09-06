@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 
 /**
@@ -15,8 +15,11 @@ export function useQrScanner({ enabled, onDecode }) {
   // Keep the latest onDecode without re-running the camera effect below on
   // every render (it would restart the stream each time the caller's
   // callback identity changes). Assigning during render trips
-  // react-hooks/refs, so it happens here instead.
-  useEffect(() => {
+  // react-hooks/refs, so it happens here instead -- useLayoutEffect (not
+  // useEffect) so the write flushes synchronously right after commit,
+  // before paint/rAF, keeping a requestAnimationFrame tick from ever
+  // running against a stale closure.
+  useLayoutEffect(() => {
     onDecodeRef.current = onDecode;
   });
 
