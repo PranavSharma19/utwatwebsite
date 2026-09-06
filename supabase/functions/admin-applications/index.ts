@@ -199,7 +199,10 @@ Deno.serve(async (req) => {
       } else {
         const email = String(body.email ?? '').trim().toLowerCase();
         if (!email) {
-          return jsonResponse({ error: 'Missing email.' }, 400, corsHeaders);
+          // Matches the sibling `checkin` branch above: an unresolvable
+          // input is an outcome the door screen renders, not a failure to
+          // retry, so both actions stay on the "always 200" contract.
+          return jsonResponse({ result: 'not_found', application: null }, 200, corsHeaders);
         }
         // Rows written by submit-application are already lowercased; the
         // unique index is on lower(email), so this matches at most one row.
