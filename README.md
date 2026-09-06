@@ -45,6 +45,40 @@ ADMIN_EMAIL_ALLOWLIST=organizer1@example.com,organizer2@example.com
 
 Applicants authenticate with passwordless email OTP. Admin access is granted only to authenticated users whose email is in `ADMIN_EMAIL_ALLOWLIST`.
 
+### Faction cheer tracker
+
+Apply `supabase/migrations/202608250001_faction_cheers.sql`, then deploy the
+`faction-cheer` Edge Function. It needs:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=...
+TURNSTILE_SECRET_KEY=...
+TURNSTILE_EXPECTED_HOSTNAME=<the production hostname the Turnstile widget runs on>
+CHEER_HASH_SALT=<any long random string>
+ALLOWED_ORIGIN=https://<production-domain>
+```
+
+`ALLOWED_ORIGIN`, `TURNSTILE_EXPECTED_HOSTNAME` and `CHEER_HASH_SALT` are not
+optional: the function fails closed and refuses writes (`GET` still works) if
+any of them is unset, rather than defaulting open. `CHEER_HASH_SALT` is the
+one whose absence would otherwise be invisible — without it `visitor_hash`
+degrades to `SHA-256("<ip>|YYYY-MM-DD|")`, which is a 2^32 keyspace against a
+known date, i.e. the table would hold effectively reversible IP addresses
+while the deploy looked perfectly healthy.
+
+`supabase/config.toml` pins `verify_jwt = false` for `faction-cheer`, because
+cheering is anonymous and there is no session to verify; with the platform
+default left on, every cheer is rejected at the gateway with a 401 before the
+function runs. The project anon key is still required and is sent by
+`src/cheer/cheerClient.js`.
+
+The `faction_cheers` table has RLS enabled with no policies — it is
+unreachable with the anon key by design. All access goes through the
+function under the service role, which also rate-limits and Turnstile-checks
+every write. The uniqueness guarantee is one cheer per IP address per UTC
+day, accumulating into an all-time tally — not one cheer per visitor forever;
+see the comment on `faction_cheers_visitor_uniq` in the migration for why.
+
 ## Post-admission: RSVP, waiver, door check-in
 
 Design: `docs/superpowers/specs/2026-09-05-post-admission-rsvp-checkin-design.md`.
@@ -204,7 +238,13 @@ earlier one is confirmed.
    want of an admin Supabase session:
    - **Admin console**: RSVP column and filter, headcount strip, manual
      check-in (row → Check in manually), undo check-in, and the two-step
-     RSVP reset button.
+     RSVP reset button. Also click the **Door Scan** link from the admin
+     console and confirm it lands on `<adminPath>/checkin` — the link
+     (`AdmissionsAdminPage.jsx`) and the route (`App.jsx`) were written by
+     different tasks and were only checked against each other by an exact
+     string match, never by a click-through; a mismatch there fails
+     silently, since React Router's catch-all just bounces the operator to
+     the landing page with no error.
    - **Door scan page, on a real phone with a real camera**, over HTTPS (or
      `npm run dev -- --host` plus a Vercel preview URL): camera permission
      and rear-camera selection, a real QR scan of a Task 6 ticket decoding
@@ -222,37 +262,3 @@ earlier one is confirmed.
 
 Record the result of each step in the commit body when this checklist is
 run for real.
-
-### Faction cheer tracker
-
-Apply `supabase/migrations/202608250001_faction_cheers.sql`, then deploy the
-`faction-cheer` Edge Function. It needs:
-
-```bash
-SUPABASE_SERVICE_ROLE_KEY=...
-TURNSTILE_SECRET_KEY=...
-TURNSTILE_EXPECTED_HOSTNAME=<the production hostname the Turnstile widget runs on>
-CHEER_HASH_SALT=<any long random string>
-ALLOWED_ORIGIN=https://<production-domain>
-```
-
-`ALLOWED_ORIGIN`, `TURNSTILE_EXPECTED_HOSTNAME` and `CHEER_HASH_SALT` are not
-optional: the function fails closed and refuses writes (`GET` still works) if
-any of them is unset, rather than defaulting open. `CHEER_HASH_SALT` is the
-one whose absence would otherwise be invisible — without it `visitor_hash`
-degrades to `SHA-256("<ip>|YYYY-MM-DD|")`, which is a 2^32 keyspace against a
-known date, i.e. the table would hold effectively reversible IP addresses
-while the deploy looked perfectly healthy.
-
-`supabase/config.toml` pins `verify_jwt = false` for `faction-cheer`, because
-cheering is anonymous and there is no session to verify; with the platform
-default left on, every cheer is rejected at the gateway with a 401 before the
-function runs. The project anon key is still required and is sent by
-`src/cheer/cheerClient.js`.
-
-The `faction_cheers` table has RLS enabled with no policies — it is
-unreachable with the anon key by design. All access goes through the
-function under the service role, which also rate-limits and Turnstile-checks
-every write. The uniqueness guarantee is one cheer per IP address per UTC
-day, accumulating into an all-time tally — not one cheer per visitor forever;
-see the comment on `faction_cheers_visitor_uniq` in the migration for why.
