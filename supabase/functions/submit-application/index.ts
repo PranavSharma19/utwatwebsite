@@ -12,16 +12,17 @@
 // clicks it. Email is now a form field, and nothing an applicant does depends
 // on mail arriving.
 //
-// Three actions:
+// Four actions:
 //   resume-upload-url  -> a short-lived signed URL, so a 10 MB PDF goes
 //                         browser -> storage directly and never through here
 //   submit             -> validate, insert, return the status token
 //   status             -> read one row back by that token
+//   rsvp               -> an admitted applicant's one-shot RSVP, by that token
 //
-// Turnstile gates the two that write. `status` does not take one: it is a read
-// of a single row by an unguessable id, it is the thing an applicant reloads
-// days later, and putting a captcha on it would mean solving a widget to find
-// out whether you got in.
+// Turnstile gates the two that write a NEW row or object. `status` and `rsvp`
+// do not take one: both are bounded to the single row an unguessable token
+// already names, and a captcha on them would mean solving a widget to find
+// out whether you got in. The pure parts of `rsvp` live in ./rsvp.ts.
 //
 // The validation and row-shaping live in ./application.ts so they can be
 // tested under vitest; this file is the IO around them.
@@ -43,6 +44,14 @@ import {
   toRow,
   validate,
 } from './application.ts'
+import {
+  STATUS_COLUMNS,
+  rsvpGate,
+  toRsvpUpdate,
+  toStatusResponse,
+  validateRsvp,
+  type StatusRow,
+} from './rsvp.ts'
 
 const ALLOWED_ORIGINS = parseList(Deno.env.get('ALLOWED_ORIGIN'))
 const TURNSTILE_EXPECTED_HOSTNAMES = parseList(
@@ -133,30 +142,53 @@ Deno.serve(async (req) => {
     const { action, turnstileToken, form, statusToken } =
       payload as Record<string, unknown>
 
-    // --- status -----------------------------------------------------------
-    // No captcha, by design (see the header). The token is the capability.
-    // The column list is deliberately narrow: enough to render a status page,
-    // nothing that would turn a leaked bookmark into a data disclosure.
-    if (action === 'status') {
+    // --- status / rsvp ------------------------------------------------------
+    // Both are keyed by the token alone. The column list is STATUS_COLUMNS:
+    // enough to render the status page and the ticket, nothing that would turn
+    // a leaked bookmark into a data disclosure.
+    if (action === 'status' || action === 'rsvp') {
       if (typeof statusToken !== 'string' || !statusToken) {
         return json(cors, { error: 'missing token' }, 400)
       }
-      // Trimmed once and used for both the check and the query: a link copied
-      // out of a chat window routinely arrives with whitespace on it.
       const token = statusToken.trim()
-      // Not a 400: the page renders 'not found' for a link it cannot resolve,
-      // and a mistyped token is exactly that. Also saves a round trip.
       if (!STATUS_TOKEN_RE.test(token)) {
         return json(cors, { error: 'not found' }, 404)
       }
       const { data, error } = await admin
         .from('applications')
-        .select('status, submitted_at, first_name, school, preferred_track')
+        .select(STATUS_COLUMNS)
         .eq('status_token', token)
         .maybeSingle()
       if (error) throw error
       if (!data) return json(cors, { error: 'not found' }, 404)
-      return json(cors, { application: data })
+      const row = data as unknown as StatusRow
+
+      if (action === 'status') {
+        return json(cors, { application: toStatusResponse(row) })
+      }
+
+      const gate = rsvpGate(row)
+      if (gate) {
+        return json(cors, { error: gate }, gate === 'already responded' ? 409 : 403)
+      }
+
+      const { errors, values } = validateRsvp(payload as Record<string, unknown>)
+      if (Object.keys(errors).length > 0) {
+        return json(cors, { error: 'validation failed', errors }, 422)
+      }
+
+      // The rsvp_status filter makes two simultaneous submits race safely:
+      // exactly one matches the pending row, the other updates nothing.
+      const { data: updated, error: updateError } = await admin
+        .from('applications')
+        .update(toRsvpUpdate(values))
+        .eq('status_token', token)
+        .eq('rsvp_status', 'pending')
+        .select(STATUS_COLUMNS)
+        .maybeSingle()
+      if (updateError) throw updateError
+      if (!updated) return json(cors, { error: 'already responded' }, 409)
+      return json(cors, { application: toStatusResponse(updated as unknown as StatusRow) })
     }
 
     // Everything past here writes, so everything past here needs a token.

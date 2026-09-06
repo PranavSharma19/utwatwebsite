@@ -9,6 +9,16 @@ export const portalConfig = {
   eventStartIso: '2026-09-12',
   eventEndIso: '2026-09-13',
   applicationDeadlineIso: '2026-09-08T23:59:00-04:00',
+  // RSVP window for admitted applicants. Enforced by the rsvp action in
+  // supabase/functions/submit-application/rsvp.ts, whose RSVP_DEADLINE is
+  // pinned to this value by portalConfig.test.js. Anyone admitted after this
+  // gets 24 hours from their decision instead; the server computes that and
+  // hands the page an rsvp_deadline, so nothing here does date math.
+  rsvpDeadlineIso: '2026-09-10T23:59:00-04:00',
+  // Stamped onto each RSVP row so the record says which wording was accepted.
+  // Bump together with rsvp.ts WAIVER_VERSION and participantWaiver.version.
+  waiverVersion: '2026-09-08',
+  minimumAge: 18,
   // Both point at the same inbox: the event is student-run and there is no
   // contact@ / sponsors@ alias behind it. They stay separate keys so a real
   // sponsorship address can be split out later without hunting call sites.
@@ -68,6 +78,27 @@ export const portalConfig = {
       tone: 'text-rose-300 border-rose-400/30 bg-rose-400/10',
     },
   },
+  // Second axis on an admitted application. checked_in is not a stored status
+  // -- it is attending plus a checked_in_at -- but it is what the console and
+  // the ticket need to show, so it gets a badge like the rest.
+  rsvpStatuses: {
+    pending: {
+      label: 'RSVP Pending',
+      tone: 'text-outline border-white/10 bg-white/5',
+    },
+    attending: {
+      label: 'Attending',
+      tone: 'text-emerald-300 border-emerald-400/30 bg-emerald-400/10',
+    },
+    declined: {
+      label: 'Declined',
+      tone: 'text-rose-300 border-rose-400/30 bg-rose-400/10',
+    },
+    checked_in: {
+      label: 'Checked In',
+      tone: 'text-primary border-primary/30 bg-primary/10',
+    },
+  },
   // Routes, not absolute URLs: these are pages of this same SPA (see
   // src/App.jsx). Left empty, they rendered nothing anywhere, while the
   // application form still required consent to a policy that did not exist.
@@ -75,6 +106,7 @@ export const portalConfig = {
     codeOfConduct: '',
     privacy: '/privacy',
     terms: '/terms',
+    waiver: '/waiver',
   },
 };
 
@@ -142,4 +174,17 @@ export function formatDeadline() {
     timeStyle: 'short',
     timeZone: 'America/Toronto',
   }).format(new Date(portalConfig.applicationDeadlineIso));
+}
+
+export function rsvpBadgeKey(application = {}) {
+  if (application.checked_in_at) return 'checked_in';
+  return application.rsvp_status || 'pending';
+}
+
+export function formatRsvpDeadline(iso = portalConfig.rsvpDeadlineIso) {
+  return new Intl.DateTimeFormat('en-CA', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'America/Toronto',
+  }).format(new Date(iso));
 }

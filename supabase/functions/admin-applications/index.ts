@@ -1,4 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.2';
+import {
+  CHECKIN_COLUMNS,
+  checkinOutcome,
+  extractStatusToken,
+  publicCheckinFields,
+  rsvpResetUpdate,
+  type CheckinRow,
+} from './checkin.ts';
 
 // CORS origin is driven by ADMIN_ALLOWED_ORIGINS (comma-separated). If unset,
 // we fall back to '*' so the function keeps working before it is configured.
@@ -174,6 +182,81 @@ Deno.serve(async (req) => {
       return jsonResponse({ url: data.signedUrl }, 200, corsHeaders);
     }
 
+    // Door check-in. Every outcome is a 200 with a `result`: from the scan
+    // page's point of view "not attending" and "unknown code" are answers to
+    // show in red, not failures to retry.
+    if (
+      req.method === 'POST' &&
+      (body.action === 'checkin' || body.action === 'checkin_by_email')
+    ) {
+      let query = adminClient.from('applications').select(CHECKIN_COLUMNS);
+      if (body.action === 'checkin') {
+        const token = extractStatusToken(body.statusToken);
+        if (!token) {
+          return jsonResponse({ result: 'not_found', application: null }, 200, corsHeaders);
+        }
+        query = query.eq('status_token', token);
+      } else {
+        const email = String(body.email ?? '').trim().toLowerCase();
+        if (!email) {
+          // Matches the sibling `checkin` branch above: an unresolvable
+          // input is an outcome the door screen renders, not a failure to
+          // retry, so both actions stay on the "always 200" contract.
+          return jsonResponse({ result: 'not_found', application: null }, 200, corsHeaders);
+        }
+        // Rows written by submit-application are already lowercased; the
+        // unique index is on lower(email), so this matches at most one row.
+        query = query.ilike('email', email.replace(/[%_]/g, '\\$&'));
+      }
+
+      const { data: found, error: findError } = await query.maybeSingle();
+      if (findError) {
+        return jsonResponse({ error: findError.message }, 400, corsHeaders);
+      }
+      const row = (found as CheckinRow | null) ?? null;
+      const outcome = checkinOutcome(row);
+      if (outcome !== 'checked_in') {
+        return jsonResponse(
+          { result: outcome, application: row ? publicCheckinFields(row) : null },
+          200,
+          corsHeaders,
+        );
+      }
+
+      // `is('checked_in_at', null)` makes two doors scanning the same person
+      // at once race safely: one update matches, the other sees the result.
+      const { data: updated, error: updateError } = await adminClient
+        .from('applications')
+        .update({ checked_in_at: new Date().toISOString(), checked_in_by: user.email })
+        .eq('id', row!.id)
+        .is('checked_in_at', null)
+        .select(CHECKIN_COLUMNS)
+        .maybeSingle();
+      if (updateError) {
+        return jsonResponse({ error: updateError.message }, 400, corsHeaders);
+      }
+      if (!updated) {
+        const { data: again } = await adminClient
+          .from('applications')
+          .select(CHECKIN_COLUMNS)
+          .eq('id', row!.id)
+          .maybeSingle();
+        return jsonResponse(
+          {
+            result: 'already_checked_in',
+            application: publicCheckinFields((again as CheckinRow) ?? row!),
+          },
+          200,
+          corsHeaders,
+        );
+      }
+      return jsonResponse(
+        { result: 'checked_in', application: publicCheckinFields(updated as CheckinRow) },
+        200,
+        corsHeaders,
+      );
+    }
+
     if (req.method === 'POST' && body.action === 'list') {
       const filters = body.filters || {};
       let query = adminClient
@@ -215,27 +298,58 @@ Deno.serve(async (req) => {
         );
       }
 
+      const { data: current, error: currentError } = await adminClient
+        .from('applications')
+        .select('status, rsvp_status')
+        .eq('id', body.id)
+        .maybeSingle();
+      if (currentError) {
+        return jsonResponse({ error: currentError.message }, 400, corsHeaders);
+      }
+      if (!current) {
+        return jsonResponse({ error: 'Application not found.' }, 404, corsHeaders);
+      }
+
       const updates: Record<string, unknown> = {};
+      const now = new Date().toISOString();
 
       if (body.status) {
         if (!allowedStatuses.has(body.status)) {
           return jsonResponse({ error: 'Invalid status.' }, 400, corsHeaders);
         }
-        updates.status = body.status;
-        updates.decided_at = ['admitted', 'waitlisted', 'rejected'].includes(
-          body.status,
-        )
-          ? new Date().toISOString()
-          : null;
-        updates.decided_by = ['admitted', 'waitlisted', 'rejected'].includes(
-          body.status,
-        )
-          ? user.email
-          : null;
+        // Only a real change is a decision. Re-saving the same status (to
+        // edit notes, say) used to re-stamp decided_at, which would now
+        // silently extend a late admit's 24-hour RSVP window.
+        if (body.status !== current.status) {
+          const decided = ['admitted', 'waitlisted', 'rejected'].includes(body.status);
+          updates.status = body.status;
+          updates.decided_at = decided ? now : null;
+          updates.decided_by = decided ? user.email : null;
+        }
       }
 
       if (typeof body.admin_notes === 'string') {
         updates.admin_notes = body.admin_notes;
+      }
+
+      if (body.rsvp_reset === true) {
+        Object.assign(updates, rsvpResetUpdate());
+      }
+
+      if (typeof body.checked_in === 'boolean') {
+        if (body.checked_in && current.rsvp_status !== 'attending') {
+          return jsonResponse(
+            { error: 'Only someone who RSVP’d as attending can be checked in.' },
+            409,
+            corsHeaders,
+          );
+        }
+        updates.checked_in_at = body.checked_in ? now : null;
+        updates.checked_in_by = body.checked_in ? user.email : null;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return jsonResponse({ error: 'Nothing to update.' }, 400, corsHeaders);
       }
 
       const { data, error: updateError } = await adminClient

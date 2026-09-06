@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { privacyPolicy, termsOfService, legalDocuments } from './legalContent';
+import { privacyPolicy, termsOfService, legalDocuments, participantWaiver } from './legalContent';
 import { portalConfig } from '../admissions/portalConfig';
 import LegalPage from '../pages/LegalPage';
 
@@ -182,5 +182,45 @@ describe('policy links', () => {
       'utf8',
     );
     expect(form).toContain('policyLinks.privacy');
+  });
+
+  it('the waiver is routed and linked like the other two', () => {
+    expect(portalConfig.policyLinks.waiver).toBe(`/${participantWaiver.slug}`);
+    const app = readFileSync(join('src', 'App.jsx'), 'utf8');
+    expect(app).toContain(`path="${portalConfig.policyLinks.waiver}"`);
+  });
+
+  // The RSVP form must not render against placeholder text. statusView.js
+  // reads this flag; this pins that the flag exists and is a boolean.
+  it('the waiver declares whether it is still a placeholder', () => {
+    expect(typeof participantWaiver.placeholder).toBe('boolean');
+    expect(participantWaiver.version).toBe(portalConfig.waiverVersion);
+  });
+
+  // The flag and the text have to agree. A waiver marked live while draft
+  // wording is still in it would open the RSVP form against text nobody
+  // intended people to be bound by -- which is the exact failure the flag
+  // exists to prevent.
+  it('carries no draft wording once it is marked live', () => {
+    if (participantWaiver.placeholder) return;
+    const body = [
+      ...participantWaiver.intro,
+      ...participantWaiver.sections.flatMap((s) => [s.heading, ...s.paragraphs]),
+    ].join('\n');
+    expect(body).not.toMatch(/PLACEHOLDER|TBD|\[Organi[sz]ation/i);
+    expect(participantWaiver.sections.length).toBeGreaterThanOrEqual(5);
+    for (const section of participantWaiver.sections) {
+      expect(section.paragraphs.length).toBeGreaterThan(0);
+    }
+  });
+
+  // The event is 18+ and the server enforces it, so the waiver must not carry
+  // a guardian-consent path that no applicant can ever reach.
+  it('offers no under-18 guardian path', () => {
+    const body = participantWaiver.sections
+      .flatMap((s) => s.paragraphs)
+      .join('\n');
+    expect(body).not.toMatch(/guardian/i);
+    expect(body).toContain(String(portalConfig.minimumAge));
   });
 });

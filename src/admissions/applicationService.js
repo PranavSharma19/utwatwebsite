@@ -133,6 +133,28 @@ export async function fetchApplicationStatus(statusToken) {
   }
 }
 
+/**
+ * An admitted applicant's one-shot RSVP. Resolves to the same shape `status`
+ * returns, already reflecting the answer. Throws ApplicationError: a
+ * `validation failed` reply carries fieldErrors keyed like the form; the other
+ * codes ('rsvp closed', 'already responded', 'underage', 'not admitted',
+ * 'not found') arrive as the message, which statusView.RSVP_ERROR_COPY maps
+ * to a sentence.
+ */
+export async function submitRsvp(statusToken, form) {
+  const { application } = await callSubmitFunction({
+    action: 'rsvp',
+    statusToken,
+    attending: form.attending === true,
+    dietaryRestrictions: form.dietary_restrictions,
+    emergencyContactName: form.emergency_contact_name,
+    emergencyContactPhone: form.emergency_contact_phone,
+    waiverAccepted: form.waiver_accepted === true,
+    rosterOptIn: form.roster_opt_in === true,
+  });
+  return application;
+}
+
 // --- Admin console ---------------------------------------------------------
 //
 // The admin path still authenticates, and deliberately so. It is a handful of
@@ -198,4 +220,29 @@ export async function createAdminResumeUrl(path) {
   }
 
   return data.url;
+}
+
+async function callAdminFunction(body) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke(
+    portalConfig.adminFunctionName,
+    { method: 'POST', body },
+  );
+  if (error) {
+    throw await toFunctionError(error);
+  }
+  return data;
+}
+
+/**
+ * Door check-in. Resolves to `{ result, application }` where result is one of
+ * checked_in | already_checked_in | not_attending | not_found. These are
+ * outcomes, not errors: the scan page shows each in its own colour.
+ */
+export function checkInByToken(statusToken) {
+  return callAdminFunction({ action: 'checkin', statusToken });
+}
+
+export function checkInByEmail(email) {
+  return callAdminFunction({ action: 'checkin_by_email', email });
 }

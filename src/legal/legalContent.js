@@ -194,4 +194,102 @@ export const termsOfService = {
   ],
 };
 
-export const legalDocuments = [privacyPolicy, termsOfService];
+/**
+ * The participant waiver an admitted applicant accepts when they RSVP.
+ *
+ * `placeholder` is a real switch, not a note: while it is true the status page
+ * shows "RSVP opens shortly" instead of the form (src/admissions/statusView.js),
+ * which is the code-level form of the rule that no decision email goes out
+ * before the waiver is live. It is false now that the wording below is final.
+ * If the wording changes again after anyone has accepted it, bump `version` in
+ * all three places (here, portalConfig.waiverVersion, and WAIVER_VERSION in
+ * supabase/functions/submit-application/rsvp.ts) so each stored acceptance
+ * still names the text that was actually accepted.
+ *
+ * There is deliberately no parent/guardian consent section. The event is 18+
+ * and that is enforced, not advisory: deriveStatusView returns 'underage' for
+ * an applicant whose over_18 is not true, and the rsvp action in rsvp.ts
+ * refuses their RSVP outright. A guardian block would be text no one can ever
+ * reach, implying a path into the event that does not exist.
+ */
+export const participantWaiver = {
+  slug: 'waiver',
+  title: 'Participant Waiver',
+  updated: portalConfig.waiverVersion,
+  version: portalConfig.waiverVersion,
+  placeholder: false,
+  intro: [
+    `This is the agreement you accept when you RSVP to ${portalConfig.eventName} ${portalConfig.eventYear} (${portalConfig.eventDateRange}), referred to below as the Event. The Event is organised by UTWAT together with UTMIST.`,
+    `You accept it digitally: there is nothing to print, sign, or scan. On your status page you tick "I have read and agree to the Participant Waiver" and submit your RSVP, and that submission is your signature. See "How you sign this" below for exactly what gets recorded.`,
+    `Questions about the waiver can be sent to ${portalConfig.contactEmail} before you accept it.`,
+  ],
+  sections: [
+    {
+      heading: 'Eligibility',
+      paragraphs: [
+        `Participation is open to admitted applicants who are ${portalConfig.minimumAge} or over on the first day of the Event. You confirmed your age on your application, and the RSVP form will not accept a response from an applicant recorded as under ${portalConfig.minimumAge}. If your date of birth was recorded incorrectly, email ${portalConfig.contactEmail} rather than RSVPing.`,
+      ],
+    },
+    {
+      heading: 'Assumption of risk',
+      paragraphs: [
+        'I understand that participation in the Event may involve risks, including but not limited to travel to and from the Event, prolonged periods of computer use, physical activity, working in a shared environment, equipment use, food and beverage consumption, and other foreseeable or unforeseeable risks associated with attending a hackathon. I voluntarily assume these risks and agree to take reasonable care of myself and others while participating.',
+      ],
+    },
+    {
+      heading: 'Participant conduct',
+      paragraphs: [
+        'I agree to follow all Event rules, applicable laws, venue policies, and instructions provided by the organisers, volunteers, staff, and venue personnel. I will behave respectfully toward other participants, organisers, mentors, sponsors, and guests.',
+        'The organisers reserve the right to remove any participant whose conduct is unsafe, disruptive, discriminatory, harassing, or otherwise inappropriate, without refund or compensation where applicable.',
+      ],
+    },
+    {
+      heading: 'Health and emergencies',
+      paragraphs: [
+        'I understand that I am responsible for managing my own health and personal needs during the Event. In the event of an emergency, I authorise Event organisers or their representatives to contact emergency services and/or the emergency contact I gave on my RSVP form when reasonably necessary. I understand that organisers are not responsible for providing medical treatment.',
+        'The emergency contact name and phone number collected with this waiver are used for that purpose and for nothing else. Tell that person you have listed them.',
+      ],
+    },
+    {
+      heading: 'Personal property and equipment',
+      paragraphs: [
+        'I am responsible for my own belongings, including laptops, phones, chargers, and other personal equipment. I understand that the organisers, venue, sponsors, volunteers, and affiliated individuals are not responsible for loss, theft, or damage to personal property, except where such responsibility cannot legally be excluded.',
+      ],
+    },
+    {
+      heading: 'Release of liability',
+      paragraphs: [
+        'To the fullest extent permitted by applicable law, I release and hold harmless UTWAT, UTMIST, the Event organisers, volunteers, staff, sponsors, venue, and their respective officers, directors, employees, and representatives from claims arising from my participation in the Event, including claims relating to personal injury, illness, property damage, or loss, except to the extent caused by their gross negligence, wilful misconduct, or where such limitation is prohibited by law.',
+      ],
+    },
+    {
+      heading: 'Photography and media',
+      paragraphs: [
+        'I understand that photographs, video, and other recordings may be taken during the Event. By participating, I grant the organisers permission to use my image, likeness, and/or voice in photographs, videos, promotional materials, social media, websites, and other communications relating to the Event, without additional compensation.',
+        `If you would rather not appear, email ${portalConfig.contactEmail} before the Event or tell any organiser while you are there, and we will keep you out of what we capture and publish. You do not have to give a reason, and opting out does not affect your participation.`,
+      ],
+    },
+    {
+      heading: 'Projects and intellectual property',
+      paragraphs: [
+        'I understand that I retain ownership of intellectual property that I create during the Event, subject to any separate competition rules, sponsor requirements, or agreements that I have expressly accepted. I am responsible for ensuring that my project complies with applicable laws and does not infringe the intellectual property or other rights of third parties.',
+      ],
+    },
+    {
+      heading: 'How you sign this',
+      paragraphs: [
+        'Ticking the waiver checkbox on your status page and submitting your RSVP has the same effect as signing this document by hand. There is no paper copy and no separate signature step.',
+        `When you submit, we store against your application: that you accepted the waiver, the date and time you accepted it, and the version of this text you accepted (version ${portalConfig.waiverVersion}). Your name, email address, and school are already on your application and identify the acceptance. This page always shows the current version, so if the wording is ever revised after you accept, the record still names the wording you agreed to.`,
+        'Listing your first name, last initial, and school on the public participants list is a separate, optional checkbox on the same form. It is not part of this waiver, and leaving it unticked changes nothing about your participation.',
+      ],
+    },
+    {
+      heading: 'Acknowledgement',
+      paragraphs: [
+        `I confirm that I have read and understood this Waiver and Release and have had the opportunity to ask questions before participating. I voluntarily agree to its terms and understand that I am responsible for my own participation and conduct throughout the Event.`,
+      ],
+    },
+  ],
+};
+
+export const legalDocuments = [privacyPolicy, termsOfService, participantWaiver];
