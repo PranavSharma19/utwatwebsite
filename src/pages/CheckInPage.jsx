@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AuthPanel from '../admissions/AuthPanel';
@@ -12,6 +12,33 @@ import { useSupabaseSession } from '../admissions/useSupabaseSession';
 
 const RESULT_MS = 2000;
 const DEBOUNCE_MS = 5000;
+// A hung request otherwise latches `busy` forever with no operator feedback
+// -- the only recovery would be reloading the page mid-queue.
+const REQUEST_TIMEOUT_MS = 10000;
+
+// A stale/expired session surfaces here as this exact edge-function message
+// (see requireAdmin in admin-applications/index.ts). It reads as a sentence
+// the door operator cannot act on, so it gets its own UI instead of the
+// generic error banner.
+const AUTH_ERROR_RE = /auth token/i;
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('That took too long. Check your connection and try again.'));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 export default function CheckInPage() {
   const { configured, loading, user } = useSupabaseSession();
@@ -21,12 +48,20 @@ export default function CheckInPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const recent = useRef(new Map());
+  const resultTimer = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (resultTimer.current) clearTimeout(resultTimer.current);
+    };
+  }, []);
 
   const show = useCallback((response) => {
+    if (resultTimer.current) clearTimeout(resultTimer.current);
     const described = describeCheckin(response);
     setResult(described);
     if (response.result === 'checked_in') setCount((c) => c + 1);
-    setTimeout(() => setResult(null), RESULT_MS);
+    resultTimer.current = setTimeout(() => setResult(null), RESULT_MS);
   }, []);
 
   const handleDecode = useCallback(
@@ -45,7 +80,7 @@ export default function CheckInPage() {
       setBusy(true);
       setError('');
       try {
-        show(await checkInByToken(token));
+        show(await withTimeout(checkInByToken(token), REQUEST_TIMEOUT_MS));
       } catch (err) {
         setError(err.message || 'Check-in failed.');
       } finally {
@@ -66,7 +101,7 @@ export default function CheckInPage() {
     setBusy(true);
     setError('');
     try {
-      show(await checkInByEmail(email.trim()));
+      show(await withTimeout(checkInByEmail(email.trim()), REQUEST_TIMEOUT_MS));
       setEmail('');
     } catch (err) {
       setError(err.message || 'Check-in failed.');
@@ -119,7 +154,19 @@ export default function CheckInPage() {
               {cameraError}
             </div>
           )}
-          {error && (
+          {error && AUTH_ERROR_RE.test(error) && (
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-950/20 p-4 text-sm text-rose-100">
+              Your session expired.{' '}
+              <a
+                className="font-bold underline hover:text-white"
+                href={`${portalConfig.adminPath}/checkin`}
+              >
+                Sign in again
+              </a>
+              .
+            </div>
+          )}
+          {error && !AUTH_ERROR_RE.test(error) && (
             <div className="rounded-2xl border border-rose-400/20 bg-rose-950/20 p-4 text-sm text-rose-100">
               {error}
             </div>
