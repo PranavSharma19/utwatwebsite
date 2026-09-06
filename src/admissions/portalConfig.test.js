@@ -6,8 +6,16 @@ import {
   ALLOWED_OPTIONS,
   ALLOWED_SCHOOLS,
 } from '../../supabase/functions/submit-application/application.ts'
-import { RSVP_DEADLINE, WAIVER_VERSION } from '../../supabase/functions/submit-application/rsvp.ts'
+import {
+  RSVP_DEADLINE,
+  WAIVER_VERSION,
+  MAX_DIETARY_LENGTH,
+  MAX_CONTACT_NAME_LENGTH,
+  MAX_CONTACT_PHONE_LENGTH,
+  MIN_PHONE_DIGITS,
+} from '../../supabase/functions/submit-application/rsvp.ts'
 import { participantWaiver } from '../legal/legalContent'
+import { RSVP_LIMITS } from './rsvpValidation'
 
 /**
  * The dates are the one part of this config that goes wrong silently. The
@@ -269,6 +277,59 @@ describe('waiver version', () => {
 
   it('is a date, so the stored value on a row reads as "which wording"', () => {
     expect(portalConfig.waiverVersion).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+/**
+ * The RSVP field caps exist three times: as constants in rsvp.ts (the write
+ * path, whose error copy the applicant actually sees), as RSVP_LIMITS in
+ * rsvpValidation.js (the client copy that shows a field error before a round
+ * trip), and as char_length(...) CHECK constraints in the migration -- the
+ * migration's own comment says these are "the same caps the edge function
+ * enforces". Nothing pins that promise. If the edge function's cap were ever
+ * raised above the migration's, the update would fail the CHECK, `index.ts`
+ * would throw a bare updateError, and the applicant would see a 500 "internal
+ * error" on a form that looked fine, with no field message.
+ */
+describe('rsvp field limits', () => {
+  const migrationFile = join(
+    'supabase',
+    'migrations',
+    '202609060001_rsvp_checkin.sql',
+  )
+  const migrationSource = readFileSync(migrationFile, 'utf8')
+
+  function sqlCap(column) {
+    const re = new RegExp(
+      `check \\(${column} is null or char_length\\(${column}\\) <= (\\d+)\\)`,
+    )
+    const match = migrationSource.match(re)
+    expect(
+      match,
+      `expected a char_length CHECK for ${column} in ${migrationFile}`,
+    ).not.toBeNull()
+    return Number(match[1])
+  }
+
+  it('dietary_restrictions agrees across rsvp.ts, rsvpValidation.js and the migration', () => {
+    expect(MAX_DIETARY_LENGTH).toBe(RSVP_LIMITS.dietary_restrictions)
+    expect(MAX_DIETARY_LENGTH).toBe(sqlCap('dietary_restrictions'))
+  })
+
+  it('emergency_contact_name agrees across rsvp.ts, rsvpValidation.js and the migration', () => {
+    expect(MAX_CONTACT_NAME_LENGTH).toBe(RSVP_LIMITS.emergency_contact_name)
+    expect(MAX_CONTACT_NAME_LENGTH).toBe(sqlCap('emergency_contact_name'))
+  })
+
+  it('emergency_contact_phone agrees across rsvp.ts, rsvpValidation.js and the migration', () => {
+    expect(MAX_CONTACT_PHONE_LENGTH).toBe(RSVP_LIMITS.emergency_contact_phone)
+    expect(MAX_CONTACT_PHONE_LENGTH).toBe(sqlCap('emergency_contact_phone'))
+  })
+
+  // Not a CHECK constraint -- there is no cheap way to count digits in SQL --
+  // so this one is only pinned between the server and the client copy.
+  it('the minimum phone digit count agrees between rsvp.ts and rsvpValidation.js', () => {
+    expect(MIN_PHONE_DIGITS).toBe(RSVP_LIMITS.minPhoneDigits)
   })
 })
 

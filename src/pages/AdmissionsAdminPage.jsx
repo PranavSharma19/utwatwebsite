@@ -82,7 +82,9 @@ function DetailText({ label, children }) {
   );
 }
 
-function ApplicationDetail({
+// Exported so ApplicationDetail.test.jsx can render the reset control
+// directly, without standing up a full authenticated console session.
+export function ApplicationDetail({
   application,
   updating,
   onClose,
