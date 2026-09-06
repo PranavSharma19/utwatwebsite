@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { describeCheckin, parseScannedToken } from './scan';
 
 const TOKEN = '11111111-1111-1111-1111-111111111111';
+const OTHER = '22222222-2222-2222-2222-222222222222';
 
 describe('parseScannedToken', () => {
   it('reads a token out of the URL the ticket encodes', () => {
@@ -11,6 +12,13 @@ describe('parseScannedToken', () => {
     expect(parseScannedToken(TOKEN.toUpperCase())).toBe(TOKEN);
     expect(parseScannedToken('WIFI:S:hackathon;;')).toBeNull();
     expect(parseScannedToken('')).toBeNull();
+  });
+  // A second uuid appended after the real one must not win: without the
+  // first-match rule, someone could print a QR whose trailing param points at
+  // another applicant's token and check that person in instead.
+  it('takes the first uuid when the text carries more than one', () => {
+    expect(parseScannedToken(`https://utwat.ca/apply/status/${TOKEN}?ref=${OTHER}`)).toBe(TOKEN);
+    expect(parseScannedToken(`${TOKEN} ${OTHER}`)).toBe(TOKEN);
   });
 });
 

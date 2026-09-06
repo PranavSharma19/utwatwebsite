@@ -204,5 +204,8 @@ describe('admitted, other states', () => {
     setup();
     expect(await screen.findByText('Checked In')).toBeInTheDocument();
     expect(screen.getByText(/show this at the door/i)).toBeInTheDocument();
+    // Pins the punctuation: the formatted time already ends in "p.m.", so a
+    // template that appends its own period renders "9:05 a.m..".
+    expect(screen.getByText(/^Checked in .*[^.]\.$/)).toBeInTheDocument();
   });
 });

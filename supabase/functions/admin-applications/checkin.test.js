@@ -8,6 +8,7 @@ import {
 } from './checkin.ts'
 
 const TOKEN = '11111111-1111-1111-1111-111111111111'
+const OTHER = '22222222-2222-2222-2222-222222222222'
 
 describe('extractStatusToken', () => {
   it('accepts a bare uuid, trimmed and lowercased', () => {
@@ -18,6 +19,14 @@ describe('extractStatusToken', () => {
   it('pulls the uuid out of a status URL', () => {
     expect(extractStatusToken(`https://utwat.ca/apply/status/${TOKEN}`)).toBe(TOKEN)
     expect(extractStatusToken(`https://utwat.ca/apply/status/${TOKEN}?utm=x`)).toBe(TOKEN)
+  })
+
+  // Mirrors the same case in src/admissions/admin/scan.test.js. The handler
+  // takes the first uuid, so a second one appended to the scanned text cannot
+  // redirect the check-in at another applicant's row.
+  it('takes the first uuid when the text carries more than one', () => {
+    expect(extractStatusToken(`https://utwat.ca/apply/status/${TOKEN}?ref=${OTHER}`)).toBe(TOKEN)
+    expect(extractStatusToken(`${TOKEN} ${OTHER}`)).toBe(TOKEN)
   })
 
   it('returns null for anything else', () => {

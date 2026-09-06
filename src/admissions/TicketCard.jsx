@@ -57,8 +57,10 @@ export default function TicketCard({ application, statusUrl }) {
             also find you by name.
           </p>
           {application.checked_in_at && (
+            // No trailing period: en-CA's short timeStyle already ends the
+            // string with "p.m.", and appending one rendered "8:58 p.m..".
             <p className="mt-2 text-emerald-300">
-              Checked in {formatTime(application.checked_in_at)}.
+              Checked in {formatTime(application.checked_in_at)}
             </p>
           )}
         </div>
