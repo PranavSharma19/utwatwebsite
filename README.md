@@ -132,17 +132,28 @@ Anyone who turns up with no link is found by email at the door
 
 ### Sending the decision emails
 
-`scripts/mail-merge.gs` is the Google Apps Script that sends them: it holds
-the four merge letters (admitted, waitlisted, rejected, RSVP reminder), fills
-`{{first_name}}` and `{{status_url}}` per row, and writes a `sent_at`
-timestamp into the sheet after each send so a re-run resumes rather than
-double-sending. Its header comment is the procedure. It defaults to
-`MODE = 'draft'`, which writes Gmail drafts and sends nothing.
+`scripts/mail-merge.gs` is the Google Apps Script that sends them. It holds
+the five merge letters (admitted, waitlisted, rejected, RSVP reminder,
+waitlist promotion) and fills `{{first_name}}` and `{{status_url}}` per row.
+Its header comment is the procedure. It defaults to `MODE = 'draft'`, which
+writes Gmail drafts and sends nothing.
 
-Two failure modes it exists to prevent: a partial run re-sent from the top,
-and a batch begun with less Gmail quota left than there are recipients — it
-refuses to start in that case rather than splitting a decision batch across
-two days, which would silently halve the later half's RSVP window.
+Admissions arrive in waves, so every send is recorded in a **separate
+`sent_log` tab**, keyed on (email, template). Re-import a fresh export over
+the roster tab as often as you like — the log survives it, and anyone already
+mailed that letter is skipped. Keeping the record in the roster instead would
+be wiped by exactly the re-import that makes a second wave necessary.
+
+Three failure modes it refuses outright:
+
+- **The same letter twice** to the same person, across any number of runs
+  and re-imports.
+- **A partial batch.** It will not start when Gmail's remaining daily quota
+  is below the number of recipients left, because splitting a decision batch
+  across two days silently halves the later half's RSVP window.
+- **`admitted` after the deadline.** Past `RSVP_DEADLINE` that letter names a
+  date in the past; late admits get 24 hours from their decision, so the
+  script forces `promotion` instead.
 
 ### Door runbook (Sept 12)
 

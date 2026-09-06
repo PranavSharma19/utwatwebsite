@@ -10,7 +10,10 @@
  *   1. Export the roster from the admin console on https://www.utwat.ca --
  *      Export Admitted, or Export All + Links for the waitlist/rejection
  *      batches. Exporting from localhost puts localhost URLs in the merge.
- *   2. File -> Import the CSV into a new Google Sheet, "Replace spreadsheet".
+ *   2. File -> Import the CSV into a Google Sheet. First time: "Replace
+ *      spreadsheet". For a later wave: open the SAME spreadsheet, select
+ *      the roster tab, and import with "Replace current sheet" so the
+ *      sent_log tab beside it survives.
  *   3. Extensions -> Apps Script, paste this file over Code.gs, Save.
  *   4. Pick a TEMPLATE below, leave MODE as 'draft', and Run -> sendMerge.
  *      Authorise when prompted (it asks for Gmail send + Sheets access).
@@ -19,13 +22,32 @@
  *   6. Set MODE to 'send' and Run -> sendMerge again. The drafts made in
  *      step 4 are NOT sent -- delete them, they were only for reading.
  *
- * SAFETY
- *   Every sent row gets a timestamp written into a `sent_at` column before
- *   the script moves on. Re-running skips those rows, so a script that dies
- *   at row 60 -- quota, a network blip, a closed tab -- is resumed by simply
- *   running it again. Nobody gets the email twice. That column is the reason
- *   this script exists instead of an add-on: a duplicate decision email to
- *   ninety-nine people is not a mistake you can take back.
+ * SAFETY -- how it knows who it already mailed
+ *   Admissions happen in waves. You send to 99 today, admit 30 more on
+ *   Wednesday, and export again -- and that second export contains all 129,
+ *   including the 99 who already have the email. Re-sending a decision to
+ *   someone who has already RSVP'd is confusing at best and looks like a
+ *   reversal at worst.
+ *
+ *   So the record of who has been mailed does NOT live in the roster sheet.
+ *   It lives in a separate `sent_log` tab that this script creates and
+ *   appends to, one row per email actually sent. Before each run the script
+ *   reads that log and skips anyone already there for the same template.
+ *
+ *   That means you can re-import a fresh export over the roster tab as often
+ *   as you like -- File -> Import -> "Replace current sheet" on the roster
+ *   tab -- and the log is untouched. An earlier version of this script kept
+ *   a `sent_at` column in the roster itself, which a re-import silently
+ *   wiped: every previously-mailed applicant looked unsent, and the next run
+ *   would have mailed all of them a second time.
+ *
+ *   The key is (email, template), so someone who got `admitted` on Tuesday
+ *   still receives `reminder` on Wednesday. Only the same letter to the same
+ *   person is suppressed.
+ *
+ *   The log is also crash recovery: it is appended and flushed after every
+ *   single send, so a run that dies at row 60 -- quota, a network blip, a
+ *   closed tab -- is resumed by running it again.
  */
 
 // ---------------------------------------------------------------- settings
@@ -105,6 +127,30 @@ Thanks for the time you put into applying.
 — the Battle of the Schools team`,
   },
 
+  // For anyone admitted AFTER the global RSVP deadline. rsvp.ts gives them
+  // LATE_ADMIT_GRACE_MS -- 24 hours from the moment Admit was pressed, not a
+  // date. Sending them the `admitted` letter would point at a deadline that
+  // has already passed; sendMerge() refuses that combination outright.
+  promotion: {
+    subject:
+      'A spot opened up — Battle of the Schools, confirm within 24 hours',
+    body: `Hi {{first_name}},
+
+A spot has opened up and it's yours if you want it. Battle of the Schools 2026, September 12–13 at the Bahen Centre, U of T.
+
+Because we're close to the event, this one is time-boxed: you have 24 hours from right now to confirm, then the link stops accepting answers and we offer the seat to the next person.
+
+{{status_url}}
+
+You'll answer yes or no, give us an emergency contact and any dietary restrictions, and accept the participant waiver (utwat.ca/waiver). Then that link becomes your QR ticket for the door.
+
+If you can't make it, telling us no is genuinely useful — it lets us reach the next person tonight rather than tomorrow.
+
+Questions, or the 24 hours won't work for you: r342shar@uwaterloo.ca
+
+— the Battle of the Schools team`,
+  },
+
   reminder: {
     subject: 'Last day to RSVP — Battle of the Schools closes tonight at 11:59',
     body: `Hi {{first_name}},
@@ -124,6 +170,38 @@ After tonight the link stops accepting answers and we release the seat.
 
 // ------------------------------------------------------------------ script
 
+/** Mirrors RSVP_DEADLINE in supabase/functions/submit-application/rsvp.ts. */
+const RSVP_DEADLINE = new Date('2026-09-10T23:59:00-04:00');
+
+const LOG_SHEET = 'sent_log';
+const LOG_HEADER = ['sent_at', 'template', 'email', 'status_url'];
+
+/**
+ * The tab that remembers who has been mailed. Deliberately separate from the
+ * roster, which gets replaced wholesale every time a new export is imported.
+ */
+function getLogSheet(ss) {
+  let log = ss.getSheetByName(LOG_SHEET);
+  if (!log) {
+    log = ss.insertSheet(LOG_SHEET);
+    log.appendRow(LOG_HEADER);
+    log.setFrozenRows(1);
+  }
+  return log;
+}
+
+/** Set of "template\temail" pairs already sent. */
+function alreadySent(log) {
+  const rows = log.getDataRange().getValues();
+  const keys = {};
+  for (let r = 1; r < rows.length; r++) {
+    const template = String(rows[r][1] || '').trim();
+    const email = String(rows[r][2] || '').trim().toLowerCase();
+    if (email) keys[template + '\t' + email] = true;
+  }
+  return keys;
+}
+
 function sendMerge() {
   const template = TEMPLATES[TEMPLATE];
   if (!template) throw new Error(`No template named "${TEMPLATE}".`);
@@ -131,82 +209,102 @@ function sendMerge() {
     throw new Error(`MODE must be 'draft' or 'send', not "${MODE}".`);
   }
 
-  const sheet = SpreadsheetApp.getActiveSheet();
+  // The one mistake that cannot be fixed by re-running: telling someone the
+  // deadline is Wednesday when Wednesday has been and gone. Late admits get
+  // the `promotion` letter, which says 24 hours instead of a date.
+  if (TEMPLATE === 'admitted' && new Date() > RSVP_DEADLINE) {
+    throw new Error(
+      'The RSVP deadline has passed, so the "admitted" letter would point at ' +
+        'a date in the past. Anyone admitted now gets 24 hours from the moment ' +
+        'you pressed Admit — use TEMPLATE = "promotion" instead.',
+    );
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+  if (sheet.getName() === LOG_SHEET) {
+    throw new Error(`Select the roster tab, not "${LOG_SHEET}", then run again.`);
+  }
+
   const values = sheet.getDataRange().getValues();
   const header = values[0].map(String);
-
   const col = (name) => {
     const i = header.indexOf(name);
-    if (i === -1) throw new Error(`The sheet has no "${name}" column.`);
+    if (i === -1) throw new Error(`The "${sheet.getName()}" tab has no "${name}" column.`);
     return i;
   };
   const iEmail = col('email');
   const iFirst = col('first_name');
   const iUrl = col('status_url');
 
-  // Add the bookkeeping column on first run.
-  let iSent = header.indexOf('sent_at');
-  if (iSent === -1) {
-    iSent = header.length;
-    sheet.getRange(1, iSent + 1).setValue('sent_at');
-  }
+  const log = getLogSheet(ss);
+  const sent = alreadySent(log);
 
   const pending = [];
+  let skipped = 0;
   for (let r = 1; r < values.length; r++) {
     const row = values[r];
-    if (!String(row[iEmail] || '').trim()) continue;
-    if (String(row[iSent] || '').trim()) continue; // already done
-    pending.push({ r: r + 1, row });
+    const email = String(row[iEmail] || '').trim();
+    if (!email) continue;
+    if (sent[TEMPLATE + '\t' + email.toLowerCase()]) {
+      skipped++;
+      continue;
+    }
+    pending.push({ email, first: String(row[iFirst] || '').trim(), url: String(row[iUrl] || '').trim() });
   }
 
   if (pending.length === 0) {
-    SpreadsheetApp.getUi().alert('Nothing to do — every row already has a sent_at.');
+    SpreadsheetApp.getUi().alert(
+      `Nothing to send. All ${skipped} row(s) on this tab have already had the ` +
+        `"${TEMPLATE}" email.`,
+    );
     return;
   }
 
   const quota = MailApp.getRemainingDailyQuota();
   if (MODE === 'send' && quota < pending.length) {
     throw new Error(
-      `${pending.length} rows to send but only ${quota} left in today's Gmail quota. ` +
-        'Sending part of a decision batch splits people across two days. ' +
-        'Wait for the quota to reset, or send from an account with a bigger one.',
+      `${pending.length} to send but only ${quota} left in today's Gmail quota. ` +
+        'Sending part of a decision batch splits people across two days, and the ' +
+        'RSVP deadline does not move. Wait for the reset, or send from an ' +
+        'account with a bigger quota.',
     );
   }
 
   const batch = pending.slice(0, MAX_PER_RUN);
   let done = 0;
 
-  batch.forEach(({ r, row }) => {
+  batch.forEach((p) => {
     const fill = (text) =>
       text
-        .replace(/\{\{first_name\}\}/g, String(row[iFirst] || '').trim())
-        .replace(/\{\{status_url\}\}/g, String(row[iUrl] || '').trim());
+        .replace(/\{\{first_name\}\}/g, p.first)
+        .replace(/\{\{status_url\}\}/g, p.url);
 
     const options = { name: FROM_NAME, replyTo: REPLY_TO };
-    const to = String(row[iEmail]).trim();
     const subject = fill(template.subject);
     const body = fill(template.body);
 
     if (MODE === 'draft') {
-      GmailApp.createDraft(to, subject, body, options);
+      GmailApp.createDraft(p.email, subject, body, options);
     } else {
-      GmailApp.sendEmail(to, subject, body, options);
-      // Written per row, and flushed, so a crash mid-run loses nothing:
-      // re-running resumes exactly where this stopped.
-      sheet.getRange(r, iSent + 1).setValue(new Date().toISOString());
+      GmailApp.sendEmail(p.email, subject, body, options);
+      // Logged and flushed per send, so a crash loses nothing and a re-run
+      // resumes here rather than starting over.
+      log.appendRow([new Date().toISOString(), TEMPLATE, p.email, p.url]);
       SpreadsheetApp.flush();
     }
     done++;
   });
 
-  const verb = MODE === 'draft' ? 'Drafted' : 'Sent';
   const left = pending.length - done;
   SpreadsheetApp.getUi().alert(
-    `${verb} ${done} "${TEMPLATE}" email${done === 1 ? '' : 's'}.` +
-      (left > 0 ? `\n\n${left} still pending — run again.` : '') +
+    `${MODE === 'draft' ? 'Drafted' : 'Sent'} ${done} "${TEMPLATE}" email(s).` +
+      (skipped > 0 ? `\nSkipped ${skipped} already sent this letter.` : '') +
+      (left > 0 ? `\n${left} still pending — run again.` : '') +
       (MODE === 'draft'
-        ? '\n\nNothing was sent. Read the drafts, click a status link to check it ' +
-          'loads a real application, then delete the drafts and set MODE to "send".'
+        ? '\n\nNothing was sent, and nothing was logged. Read the drafts, click a ' +
+          'status link to check it loads a real application, then delete the ' +
+          'drafts and set MODE to "send".'
         : ''),
   );
 }
