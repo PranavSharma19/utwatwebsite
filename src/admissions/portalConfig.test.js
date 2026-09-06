@@ -348,3 +348,43 @@ describe('rsvpBadgeKey', () => {
     }
   })
 })
+
+describe('venue and hacker guide', () => {
+  // The site advertised dates with no place for months. These pin that the
+  // venue reaches the three surfaces that need it: the landing hero, the FAQ
+  // somebody searches, and the ticket they hold at the door.
+  it('names a venue and an address', () => {
+    expect(portalConfig.venue).toMatch(/\S/)
+    expect(portalConfig.venueAddress).toMatch(/\S/)
+    expect(portalConfig.venueShort).toMatch(/\S/)
+    expect(portalConfig.venue).toContain(portalConfig.venueShort)
+  })
+
+  it('is rendered on the hero, the FAQ and the ticket', () => {
+    for (const file of [
+      ['src', 'components', 'Hero.jsx'],
+      ['src', 'components', 'Faq.jsx'],
+      ['src', 'admissions', 'TicketCard.jsx'],
+    ]) {
+      expect(readFileSync(join(...file), 'utf8')).toContain('portalConfig.venue')
+    }
+  })
+
+  // Empty is the correct state until the guide exists; what must never
+  // happen is a link rendered against an empty href, which resolves to the
+  // current page. TicketCard guards on truthiness -- this pins that guard.
+  it('keeps the hacker guide link out of the ticket until it has a URL', () => {
+    expect(typeof portalConfig.hackerGuideUrl).toBe('string')
+    if (portalConfig.hackerGuideUrl) {
+      expect(portalConfig.hackerGuideUrl).toMatch(/^(https?:\/\/|\/)\S+/)
+    }
+    const ticket = readFileSync(join('src', 'admissions', 'TicketCard.jsx'), 'utf8')
+    expect(ticket).toContain('portalConfig.hackerGuideUrl &&')
+  })
+
+  // policyLinks entries may never be empty (legalContent.test.jsx pins that).
+  // hackerGuideUrl is deliberately allowed to be, so it must stay out.
+  it('does not live in policyLinks', () => {
+    expect(portalConfig.policyLinks.hackerGuide).toBeUndefined()
+  })
+})

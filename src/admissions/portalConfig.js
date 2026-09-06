@@ -6,6 +6,18 @@ export const portalConfig = {
   // can be checked against the event rather than trusted to agree with a
   // prose string somebody edits by hand -- see portalConfig.test.js. Dates
   // only, no times: the schedule is not settled to the hour.
+  // Where it happens. This was missing entirely: the site advertised the
+  // dates and never said the place, so anyone who lost their decision email
+  // had no way to find out -- the exact failure the emailed status link
+  // exists to prevent. `venue` is the short form for running text; the
+  // address is what somebody navigates to.
+  venue: 'Bahen Centre, University of Toronto',
+  venueShort: 'Bahen Centre',
+  venueAddress: '40 St. George Street, Toronto',
+  // Sent to an applicant once they RSVP. Empty until the guide exists: the
+  // ticket renders the link only when this is set, rather than shipping a
+  // dead one. Not in policyLinks, which may never be empty.
+  hackerGuideUrl: '',
   eventStartIso: '2026-09-12',
   eventEndIso: '2026-09-13',
   applicationDeadlineIso: '2026-09-08T23:59:00-04:00',

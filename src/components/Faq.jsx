@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { portalConfig } from '../admissions/portalConfig';
 import { ChevronDown } from 'lucide-react';
 
 export default function Faq() {
@@ -16,6 +17,10 @@ export default function Faq() {
     {
       q: 'Do I need to know how to code to join?',
       a: "It helps, but no. Teams also need designers, people who actually understand the problem they're solving, and someone keeping the thing on track. Come anyway."
+    },
+    {
+      q: 'Where is it?',
+      a: `${portalConfig.venue} — ${portalConfig.venueAddress}. Admitted applicants get the room number and the door time by email before the weekend.`
     },
     {
       q: 'How do team sizes and registration work?',

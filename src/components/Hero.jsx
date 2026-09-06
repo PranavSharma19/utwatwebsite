@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import FactionChoice from '../faction/FactionChoice'
 import { primeTally } from '../cheer/cheerClient'
 import handImg from '../assets/hand.png'
+import { portalConfig } from '../admissions/portalConfig'
 
 /**
  * The Hero: title, hand, and the faction choice, over the globally-mounted
@@ -37,6 +38,12 @@ export default function Hero() {
       <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
         <span className="font-mono text-[10px] uppercase tracking-[.35em] text-muted">
           Toronto &amp; Waterloo &middot; September 12&ndash;13, 2026
+        </span>
+        {/* The dates shipped for months with no place attached. Kept on its
+            own line so the line above stays the two-schools framing rather
+            than becoming a logistics string. */}
+        <span className="mt-2 font-mono text-[10px] uppercase tracking-[.35em] text-muted">
+          {portalConfig.venue}
         </span>
 
         {/*

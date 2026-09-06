@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import RsvpBadge from './RsvpBadge';
+import { portalConfig } from './portalConfig';
 
 function formatTime(value) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -52,10 +53,33 @@ export default function TicketCard({ application, statusUrl }) {
         </div>
         <div className="text-sm leading-relaxed text-on-surface-variant">
           <p className="text-white">Show this at the door.</p>
+          <p className="mt-2 text-white">
+            {portalConfig.venue}
+            <br />
+            <span className="text-on-surface-variant">
+              {portalConfig.venueAddress}
+            </span>
+          </p>
           <p className="mt-2">
             Screenshot it now in case you lose the link. Anyone at the desk can
             also find you by name.
           </p>
+          {/* Rendered only once the guide exists. An empty href would be a
+              link to the current page, which is worse than no link at all --
+              the same failure policyLinks.codeOfConduct had. */}
+          {portalConfig.hackerGuideUrl && (
+            <p className="mt-2">
+              <a
+                className="text-primary underline"
+                href={portalConfig.hackerGuideUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Read the hacker guide
+              </a>{' '}
+              before you arrive.
+            </p>
+          )}
           {application.checked_in_at && (
             // No trailing period: en-CA's short timeStyle already ends the
             // string with "p.m.", and appending one rendered "8:58 p.m..".
