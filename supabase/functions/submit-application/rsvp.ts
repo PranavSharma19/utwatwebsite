@@ -11,7 +11,7 @@ export const RSVP_DEADLINE = '2026-09-10T23:59:00-04:00'
 // Pinned to portalConfig.waiverVersion and participantWaiver.version by the
 // same test. Bump all three together when the waiver wording changes; the
 // value stored on each row says which wording that person accepted.
-export const WAIVER_VERSION = '2026-09-08'
+export const WAIVER_VERSION = '2026-09-06'
 
 // Someone admitted from the waitlist after the global deadline gets this long
 // from the moment the admin pressed Admit.

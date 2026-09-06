@@ -239,7 +239,7 @@ export const participantWaiver = {
     {
       heading: 'Participant conduct',
       paragraphs: [
-        'I agree to follow all Event rules, applicable laws, venue policies, and instructions provided by the organisers, volunteers, staff, and venue personnel. I will behave respectfully toward other participants, organisers, mentors, sponsors, and guests.',
+        `I agree to follow all Event rules, applicable laws, venue policies, and instructions provided by the organisers, volunteers, staff, and venue personnel. I will behave respectfully toward other participants, organisers, mentors, sponsors, and guests. The Event rules referred to here are the Code of Conduct at ${portalConfig.policyLinks.codeOfConduct}, which also says how to report a problem and what happens when you do.`,
         'The organisers reserve the right to remove any participant whose conduct is unsafe, disruptive, discriminatory, harassing, or otherwise inappropriate, without refund or compensation where applicable.',
       ],
     },
@@ -292,4 +292,79 @@ export const participantWaiver = {
   ],
 };
 
-export const legalDocuments = [privacyPolicy, termsOfService, participantWaiver];
+/**
+ * The code of conduct. `policyLinks.codeOfConduct` was an empty string for
+ * most of this site's life, which meant the waiver could bind people to
+ * "all Event rules" while there were no published rules to read -- and meant
+ * a participant being harassed had nowhere to look for how to report it.
+ *
+ * Deliberately names one address and one promise about what happens next.
+ * A reporting channel nobody answers is worse than none at all, because it
+ * costs the person the effort of writing and then the second injury of
+ * silence.
+ */
+export const codeOfConduct = {
+  slug: 'code-of-conduct',
+  title: 'Code of Conduct',
+  updated: portalConfig.waiverVersion,
+  intro: [
+    `${portalConfig.eventName} ${portalConfig.eventYear} (${portalConfig.eventDateRange}) is a place to build something with people you have not met before. That only works if everyone can expect to be treated decently, so these are the rules, and they are enforced.`,
+    `This applies to everyone at the Event -- participants, organisers, volunteers, mentors, judges, and sponsors alike -- and it applies wherever the Event is happening: the venue, any online space we run for it, and the submission platform.`,
+  ],
+  sections: [
+    {
+      heading: 'What we expect',
+      paragraphs: [
+        'Be decent to the people around you. Assume the person you are talking to knows things you do not. Give people room to be new at something: a first hackathon, a first time with a language, a first time asking a question in a room full of strangers.',
+        'Respect the venue, the equipment, and the people working in it. Follow instructions from organisers, volunteers, and venue staff.',
+        'If someone tells you to stop, stop. You do not have to agree that you were doing something wrong to stop doing it.',
+      ],
+    },
+    {
+      heading: 'What is not acceptable',
+      paragraphs: [
+        'Harassment of any kind, including comments or conduct related to race, colour, ancestry, place of origin, ethnicity, citizenship, creed or religion, sex, sexual orientation, gender identity or expression, age, disability, family or marital status, or any other ground protected by human rights law.',
+        'Unwelcome sexual attention or advances, sexual images or language in shared spaces, deliberate intimidation, stalking or following, sustained disruption of talks or workshops, unwanted photography or recording of a person who has asked you not to, and inappropriate physical contact.',
+        'Threats or advocacy of violence or self-harm, whether serious or "as a joke".',
+        'Interfering with anyone else\u2019s project, hardware, accounts, or data. Accessing systems, networks, or accounts you were not given access to. The Event is not an excuse to test that on each other.',
+        'Bringing weapons, illegal substances, or anything the venue prohibits.',
+      ],
+    },
+    {
+      heading: 'Building fairly',
+      paragraphs: [
+        'Write your project during the Event. Bringing an idea, a design, or a plan is expected and fine; submitting code you wrote beforehand as if you wrote it here is not.',
+        'Open-source libraries, public APIs, published models, and AI coding tools are all allowed unless a specific challenge says otherwise. Say what you used when you present.',
+        'Do not submit work that is not yours to submit, and do not misrepresent what your project does to judges.',
+      ],
+    },
+    {
+      heading: 'Reporting something',
+      paragraphs: [
+        `If something happens to you, or you see it happen to someone else, tell any organiser at the Event -- they are the people who can act on it right then -- or email ${portalConfig.contactEmail}. Either route reaches the organising team.`,
+        'You can report something without knowing whether it "counts". Deciding that is our job, not yours. You will not be asked to confront the other person, and you will not be told to work it out between yourselves.',
+        'We will take it seriously, we will not share your name more widely than we need to in order to act, and we will tell you what we did. If you would rather report something after the Event, the email address above still works.',
+      ],
+    },
+    {
+      heading: 'What we do about it',
+      paragraphs: [
+        'Depending on what happened, that may be a private word, a warning, moving someone away from another person or team, removing someone from a space, disqualifying a project, or removing someone from the Event entirely without refund or compensation. Serious cases are reported to the venue or to the police.',
+        'The organisers decide this, and the decision is final for the duration of the Event.',
+      ],
+    },
+    {
+      heading: 'Questions',
+      paragraphs: [
+        `Anything about these rules, before or after the Event, goes to ${portalConfig.contactEmail}.`,
+      ],
+    },
+  ],
+};
+
+export const legalDocuments = [
+  privacyPolicy,
+  termsOfService,
+  participantWaiver,
+  codeOfConduct,
+];

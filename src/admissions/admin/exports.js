@@ -52,6 +52,31 @@ export function buildAdmittedCsv(applications, origin) {
   return toCsv(headers, rows);
 }
 
+/**
+ * Mail-merge input for a decision email that goes to everyone, not just the
+ * admitted: waitlisted and rejected applicants also have a status page worth
+ * linking, and the link is the only way any of them reaches it. `status` is a
+ * column so the sheet can be split by decision before sending.
+ *
+ * 'incomplete' rows are excluded. They predate the move to browser-held
+ * drafts (see src/admissions/draftStorage.js) and represent an application
+ * nobody finished submitting -- mailing those a decision would be a decision
+ * about nothing.
+ */
+export function buildAllApplicantsCsv(applications, origin) {
+  const headers = [
+    'status', 'first_name', 'last_name', 'email', 'school', 'status_url',
+  ];
+  const rows = applications
+    .filter((a) => a.status && a.status !== 'incomplete')
+    .sort(byName)
+    .map((a) => [
+      a.status, a.first_name, a.last_name, a.email, a.school,
+      `${origin}/apply/status/${a.status_token}`,
+    ]);
+  return toCsv(headers, rows);
+}
+
 /** The day-of sheet and, printed, the door clipboard. Sorted by last name. */
 export function buildAttendingCsv(applications) {
   const headers = [

@@ -3,7 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { privacyPolicy, termsOfService, legalDocuments, participantWaiver } from './legalContent';
+import {
+  codeOfConduct,
+  legalDocuments,
+  participantWaiver,
+  privacyPolicy,
+  termsOfService,
+} from './legalContent';
 import { portalConfig } from '../admissions/portalConfig';
 import LegalPage from '../pages/LegalPage';
 
@@ -182,6 +188,45 @@ describe('policy links', () => {
       'utf8',
     );
     expect(form).toContain('policyLinks.privacy');
+  });
+
+  // policyLinks.codeOfConduct was '' for most of this site's life. An empty
+  // route string is not a missing feature that shows up as a broken link --
+  // <Link to=""> renders as a link to the current page, and <Route path="">
+  // matches nothing, so it fails silently in both directions. Pin that no
+  // policy link is ever empty again.
+  it('every policy link is a real route', () => {
+    const app = readFileSync(join('src', 'App.jsx'), 'utf8');
+    for (const [name, path] of Object.entries(portalConfig.policyLinks)) {
+      expect(path, `policyLinks.${name} is empty`).toMatch(/^\/\S+$/);
+      // Routed either as a literal path or through the config value itself.
+      expect(
+        app.includes(`path="${path}"`) || app.includes(`policyLinks.${name}`),
+        `no route in App.jsx for policyLinks.${name}`,
+      ).toBe(true);
+    }
+  });
+
+  it('the code of conduct is routed, linked, and reachable from the waiver', () => {
+    expect(portalConfig.policyLinks.codeOfConduct).toBe(`/${codeOfConduct.slug}`);
+    expect(legalDocuments).toContain(codeOfConduct);
+    const footer = readFileSync(join('src', 'components', 'Footer.jsx'), 'utf8');
+    expect(footer).toContain('policyLinks.codeOfConduct');
+    // The waiver binds people to "all Event rules"; those rules have to be
+    // somewhere they can read before they accept it.
+    expect(JSON.stringify(participantWaiver)).toContain(
+      portalConfig.policyLinks.codeOfConduct,
+    );
+  });
+
+  // Someone being harassed needs to find the reporting route without reading
+  // the whole document, and it has to be the address that is actually staffed.
+  it('the code of conduct says how to report and what follows', () => {
+    const body = codeOfConduct.sections.flatMap((s) => s.paragraphs).join('\n');
+    expect(body).toContain(portalConfig.contactEmail);
+    expect(codeOfConduct.sections.map((s) => s.heading)).toContain(
+      'Reporting something',
+    );
   });
 
   it('the waiver is routed and linked like the other two', () => {

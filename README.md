@@ -104,9 +104,31 @@ npx supabase@latest functions deploy admin-applications    # checkin, reset
 ```
 
 Console additions (same admin path): RSVP column and filter, headcount strip,
-**Export Admitted** (mail-merge CSV with `status_url`), **Export Attending**
-(door clipboard, sorted by last name), and **Door Scan** at
-`<adminPath>/checkin`.
+**Export Admitted** (mail-merge CSV with `status_url`), **Export All + Links**
+(the same, for every decision including waitlisted and rejected, with a
+`status` column to split the sheet by), **Export Attending** (door clipboard,
+sorted by last name), and **Door Scan** at `<adminPath>/checkin`.
+
+### Telling applicants their link exists
+
+The status link is the only way into the status page, and the applicant's own
+copy of it lives in one browser's localStorage (`draftStorage.js`). Clearing
+site data, a second device, or a private window loses it, and there is no
+self-serve recovery. The decision email is therefore not a courtesy -- it is
+the durable copy.
+
+Send it as a **mail merge**, one message per applicant, never a CC or BCC. A
+broadcast cannot carry a per-person link, so it degrades to "check the site",
+which is not an instruction anyone can follow without their token. A CC also
+discloses every applicant's address to every other applicant.
+
+Both link exports build from every loaded application, not from the current
+filter, so a filter left set in the console cannot silently drop people from
+the merge. Send yourself a test row first and click the merged link: a merge
+that mangles the URL fails silently and completely.
+
+Anyone who turns up with no link is found by email at the door
+(`checkin_by_email`) or by name in the console.
 
 ### Door runbook (Sept 12)
 
@@ -304,10 +326,16 @@ earlier one is confirmed.
      ticket, and it is the single surface here with the most day-of
      exposure.
 
-9. **Export Admitted opens in Sheets with a working `status_url` column.**
-   From the console, run **Export Admitted** and open the CSV in Google
-   Sheets (or Excel); confirm the `status_url` column contains a working
-   link to each applicant's `/apply/status/<token>` page.
+9. **Both link exports open in Sheets with a working `status_url` column.**
+   From the console, run **Export Admitted** and **Export All + Links** and
+   open each CSV in Google Sheets (or Excel); confirm the `status_url` column
+   contains a working link to each applicant's `/apply/status/<token>` page,
+   and that **Export All + Links** carries waitlisted and rejected rows that
+   **Export Admitted** does not.
+
+10. **Read `/code-of-conduct` on the deployed site.** The waiver binds
+    acceptors to it by name, so it has to be readable before anyone accepts
+    the waiver. Confirm the Code of Conduct link in the footer resolves.
 
 Record the result of each step in the commit body when this checklist is
 run for real.

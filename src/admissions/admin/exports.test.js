@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildAdmittedCsv,
+  buildAllApplicantsCsv,
   buildApplicationsCsv,
   buildAttendingCsv,
   csvEscape,
@@ -91,5 +92,49 @@ describe('buildAttendingCsv', () => {
     );
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('vegan');
+  });
+});
+
+describe('buildAllApplicantsCsv', () => {
+  const rows = [
+    app({ status: 'rejected', last_name: 'Zed', status_token: 'tok-z' }),
+    app({ status: 'waitlisted', last_name: 'Adams', status_token: 'tok-a' }),
+    app({ status: 'admitted', last_name: 'Mid', status_token: 'tok-m' }),
+  ];
+
+  it('includes every decision, each with its own status link, sorted by name', () => {
+    const csv = buildAllApplicantsCsv(rows, 'https://utwat.ca');
+    const [header, ...body] = csv.split('\n');
+    expect(header).toBe(
+      '"status","first_name","last_name","email","school","status_url"',
+    );
+    expect(body.map((line) => line.split(',')[2])).toEqual([
+      '"Adams"', '"Mid"', '"Zed"',
+    ]);
+    expect(csv).toContain('"https://utwat.ca/apply/status/tok-a"');
+    expect(csv).toContain('"https://utwat.ca/apply/status/tok-z"');
+    // Unlike buildAdmittedCsv, a rejection is not filtered out: the whole
+    // point is that everyone can reach their own page.
+    expect(csv).toContain('"rejected"');
+    expect(csv).toContain('"waitlisted"');
+  });
+
+  // An unfinished application predates browser-held drafts and has no
+  // decision to mail about.
+  it('leaves out incomplete applications', () => {
+    const csv = buildAllApplicantsCsv(
+      [...rows, app({ status: 'incomplete', last_name: 'Draft' })],
+      'https://utwat.ca',
+    );
+    expect(csv).not.toContain('"Draft"');
+    expect(csv.split('\n')).toHaveLength(4);
+  });
+
+  it('sends the status link through the formula guard like every other cell', () => {
+    const csv = buildAllApplicantsCsv(
+      [app({ first_name: '=cmd|x', status_token: 'tok' })],
+      'https://utwat.ca',
+    );
+    expect(csv).toContain(`"'=cmd|x"`);
   });
 });

@@ -17,7 +17,7 @@ export const portalConfig = {
   rsvpDeadlineIso: '2026-09-10T23:59:00-04:00',
   // Stamped onto each RSVP row so the record says which wording was accepted.
   // Bump together with rsvp.ts WAIVER_VERSION and participantWaiver.version.
-  waiverVersion: '2026-09-08',
+  waiverVersion: '2026-09-06',
   minimumAge: 18,
   // Both point at the same inbox: the event is student-run and there is no
   // contact@ / sponsors@ alias behind it. They stay separate keys so a real
@@ -103,7 +103,7 @@ export const portalConfig = {
   // src/App.jsx). Left empty, they rendered nothing anywhere, while the
   // application form still required consent to a policy that did not exist.
   policyLinks: {
-    codeOfConduct: '',
+    codeOfConduct: '/code-of-conduct',
     privacy: '/privacy',
     terms: '/terms',
     waiver: '/waiver',

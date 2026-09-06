@@ -115,6 +115,12 @@ export default function Footer() {
               >
                 Terms
               </Link>
+              <Link
+                to={portalConfig.policyLinks.codeOfConduct}
+                className="text-muted hover:text-accent transition-colors"
+              >
+                Code of Conduct
+              </Link>
             </nav>
 
             <div className="space-y-1.5 text-center md:text-right">

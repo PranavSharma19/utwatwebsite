@@ -26,6 +26,7 @@ import {
 } from "../admissions/applicationService";
 import {
   buildAdmittedCsv,
+  buildAllApplicantsCsv,
   buildApplicationsCsv,
   buildAttendingCsv,
   downloadCsv,
@@ -549,6 +550,23 @@ export default function AdmissionsAdminPage() {
               >
                 <Download size={14} />
                 Export Admitted
+              </button>
+
+              {/* Built from `applications`, not `filteredApplications`: the
+                  point of this one is that nobody is left out of the decision
+                  mail-merge because a filter was set when it was clicked. */}
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+                onClick={() =>
+                  downloadCsv(
+                    "bots-all-applicants-mail-merge.csv",
+                    buildAllApplicantsCsv(applications, window.location.origin),
+                  )
+                }
+                type="button"
+              >
+                <Download size={14} />
+                Export All + Links
               </button>
 
               <button
