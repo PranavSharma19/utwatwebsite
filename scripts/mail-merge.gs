@@ -14,7 +14,11 @@
  *      spreadsheet". For a later wave: open the SAME spreadsheet, select
  *      the roster tab, and import with "Replace current sheet" so the
  *      sent_log tab beside it survives.
- *   3. Extensions -> Apps Script, paste this file over Code.gs, Save.
+ *   3. script.google.com -> New project, paste this file over Code.gs, put
+ *      the spreadsheet's id in SPREADSHEET_ID below, and Save. A standalone
+ *      project rather than a container-bound one: Extensions -> Apps Script
+ *      fails outright when several Google accounts are signed in to the same
+ *      browser, which is the normal state of an organiser's laptop.
  *   4. Pick a TEMPLATE below, leave MODE as 'draft', and Run -> sendMerge.
  *      Authorise when prompted (it asks for Gmail send + Sheets access).
  *   5. Read the drafts in Gmail. Click a status link in one of them and
@@ -51,6 +55,13 @@
  */
 
 // ---------------------------------------------------------------- settings
+
+/**
+ * The spreadsheet the roster lives in, and the tab inside it. Taken from the
+ * sheet URL: docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
+ */
+const SPREADSHEET_ID = '166_Za2FmXlGUBF0uMyPb04RCmkV5g7HUFBkTWHZLACs';
+const SHEET_NAME = 'bots-admitted-mail-merge';
 
 /** 'draft' writes Gmail drafts and sends nothing. 'send' sends for real. */
 const MODE = 'draft';
@@ -224,10 +235,13 @@ function sendMerge() {
     );
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
-  if (sheet.getName() === LOG_SHEET) {
-    throw new Error(`Select the roster tab, not "${LOG_SHEET}", then run again.`);
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    throw new Error(
+      `No tab named "${SHEET_NAME}" in that spreadsheet. Tabs found: ` +
+        ss.getSheets().map((t) => t.getName()).join(', '),
+    );
   }
 
   const values = sheet.getDataRange().getValues();
@@ -258,11 +272,10 @@ function sendMerge() {
   }
 
   if (pending.length === 0) {
-    SpreadsheetApp.getUi().alert(
-      `Nothing to send. All ${skipped} row(s) on this tab have already had the ` +
-        `"${TEMPLATE}" email.`,
+    return report(
+      `Nothing to send. All ${skipped} row(s) on this tab have already had ` +
+        `the "${TEMPLATE}" email.`,
     );
-    return;
   }
 
   const quota = MailApp.getRemainingDailyQuota();
@@ -301,14 +314,47 @@ function sendMerge() {
   });
 
   const left = pending.length - done;
-  SpreadsheetApp.getUi().alert(
-    `${MODE === 'draft' ? 'Drafted' : 'Sent'} ${done} "${TEMPLATE}" email(s).` +
-      (skipped > 0 ? `\nSkipped ${skipped} already sent this letter.` : '') +
-      (left > 0 ? `\n${left} still pending — run again.` : '') +
+  return report(
+    `${MODE === 'draft' ? 'DRAFTED' : 'SENT'} ${done} "${TEMPLATE}" email(s). ` +
+      `Skipped ${skipped} already sent. ${left} still pending. ` +
+      `Gmail quota remaining after this run: ${MailApp.getRemainingDailyQuota()}.` +
       (MODE === 'draft'
-        ? '\n\nNothing was sent, and nothing was logged. Read the drafts, click a ' +
+        ? ' Nothing was sent and nothing was logged — read the drafts, click a ' +
           'status link to check it loads a real application, then delete the ' +
           'drafts and set MODE to "send".'
         : ''),
+  );
+}
+
+/** Standalone scripts have no SpreadsheetApp.getUi(); the log is the output. */
+function report(message) {
+  Logger.log(message);
+  return message;
+}
+
+/** Run this first. Sends nothing, touches nothing, prints what it can see. */
+function preflight() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return report(
+      `No tab named "${SHEET_NAME}". Tabs: ` +
+        ss.getSheets().map((t) => t.getName()).join(', '),
+    );
+  }
+  const values = sheet.getDataRange().getValues();
+  const header = values[0].map(String);
+  const missing = ['first_name', 'email', 'status_url'].filter(
+    (c) => header.indexOf(c) === -1,
+  );
+  const rows = values.length - 1;
+  const quota = MailApp.getRemainingDailyQuota();
+  return report(
+    `Sheet "${SHEET_NAME}" — ${rows} data row(s). ` +
+      `Columns: ${header.join(', ')}. ` +
+      (missing.length ? `MISSING: ${missing.join(', ')}. ` : 'All required columns present. ') +
+      `Sending as: ${Session.getActiveUser().getEmail()}. ` +
+      `Gmail recipients left today: ${quota}` +
+      (quota < rows ? ` — NOT ENOUGH for ${rows} rows.` : ' — enough.'),
   );
 }
