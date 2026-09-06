@@ -130,6 +130,20 @@ that mangles the URL fails silently and completely.
 Anyone who turns up with no link is found by email at the door
 (`checkin_by_email`) or by name in the console.
 
+### Sending the decision emails
+
+`scripts/mail-merge.gs` is the Google Apps Script that sends them: it holds
+the four merge letters (admitted, waitlisted, rejected, RSVP reminder), fills
+`{{first_name}}` and `{{status_url}}` per row, and writes a `sent_at`
+timestamp into the sheet after each send so a re-run resumes rather than
+double-sending. Its header comment is the procedure. It defaults to
+`MODE = 'draft'`, which writes Gmail drafts and sends nothing.
+
+Two failure modes it exists to prevent: a partial run re-sent from the top,
+and a batch begun with less Gmail quota left than there are recipients — it
+refuses to start in that case rather than splitting a decision batch across
+two days, which would silently halve the later half's RSVP window.
+
 ### Door runbook (Sept 12)
 
 1. Every organizer on the door is in `ADMIN_EMAIL_ALLOWLIST` and has signed
