@@ -89,7 +89,7 @@ export default function ApplicationStatusPage() {
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
                 That link does not match an application. It may have been
-                truncated when it was copied -- check that you have the whole
+                truncated when it was copied — check that you have the whole
                 thing, including everything after the last slash.
               </p>
               <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">

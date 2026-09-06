@@ -533,7 +533,7 @@ export default function ApplicationForm({
                 ? "Your submitted application is locked."
                 : deadlinePassed
                   ? "The application deadline has passed."
-                  : "Submit only when you're ready -- you can't edit afterwards."}
+                  : "Submit only when you're ready — you can't edit afterwards."}
             </span>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:items-end">
