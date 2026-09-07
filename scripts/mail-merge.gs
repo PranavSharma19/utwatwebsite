@@ -60,8 +60,8 @@
  * The spreadsheet the roster lives in, and the tab inside it. Taken from the
  * sheet URL: docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
  */
-const SPREADSHEET_ID = '1Zw3E_Y1mQwdxV78uFhA_9abU3-l7Yz7WGTTMwTdP8Co';
-const SHEET_NAME = 'bots-admitted-mail-merge-2';
+const SPREADSHEET_ID = '1xYoIIbJ9kn4lBFjinJLOHRUb7IL6vya05MesCFpcgmM';
+const SHEET_NAME = 'bots-admitted-mail-merge-3';
 
 /** 'draft' writes Gmail drafts and sends nothing. 'send' sends for real. */
 const MODE = 'draft';
@@ -82,7 +82,7 @@ const REPLY_TO = 'utwat.bots@gmail.com';
  * 100/day on a consumer account, 1500 on Workspace) and the script refuses to
  * start if the remaining quota is below the number of rows left to send.
  */
-const MAX_PER_RUN = 200;
+const MAX_PER_RUN = 25;
 
 // --------------------------------------------------------------- templates
 
@@ -195,7 +195,7 @@ const LOG_HEADER = ['sent_at', 'template', 'email', 'status_url'];
  * The tab that remembers who has been mailed. Deliberately separate from the
  * roster, which gets replaced wholesale every time a new export is imported.
  */
-function getLogSheet(ss) {
+function getLogSheet_(ss) {
   let log = ss.getSheetByName(LOG_SHEET);
   if (!log) {
     log = ss.insertSheet(LOG_SHEET);
@@ -206,7 +206,7 @@ function getLogSheet(ss) {
 }
 
 /** Set of "template\temail" pairs already sent. */
-function alreadySent(log) {
+function alreadySent_(log) {
   const rows = log.getDataRange().getValues();
   const keys = {};
   for (let r = 1; r < rows.length; r++) {
@@ -255,8 +255,8 @@ function sendMerge() {
   const iFirst = col('first_name');
   const iUrl = col('status_url');
 
-  const log = getLogSheet(ss);
-  const sent = alreadySent(log);
+  const log = getLogSheet_(ss);
+  const sent = alreadySent_(log);
 
   const pending = [];
   let skipped = 0;
@@ -272,7 +272,7 @@ function sendMerge() {
   }
 
   if (pending.length === 0) {
-    return report(
+    return report_(
       `Nothing to send. All ${skipped} row(s) on this tab have already had ` +
         `the "${TEMPLATE}" email.`,
     );
@@ -314,7 +314,7 @@ function sendMerge() {
   });
 
   const left = pending.length - done;
-  return report(
+  return report_(
     `${MODE === 'draft' ? 'DRAFTED' : 'SENT'} ${done} "${TEMPLATE}" email(s). ` +
       `Skipped ${skipped} already sent. ${left} still pending. ` +
       `Gmail quota remaining after this run: ${MailApp.getRemainingDailyQuota()}.` +
@@ -327,7 +327,7 @@ function sendMerge() {
 }
 
 /** Standalone scripts have no SpreadsheetApp.getUi(); the log is the output. */
-function report(message) {
+function report_(message) {
   Logger.log(message);
   return message;
 }
@@ -346,7 +346,7 @@ function preflight() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
-    return report(
+    return report_(
       `No tab named "${SHEET_NAME}". Tabs: ` +
         ss.getSheets().map((t) => t.getName()).join(', '),
     );
@@ -357,7 +357,7 @@ function preflight() {
   const missing = ['first_name', 'email', 'status_url'].filter(
     (c) => header.indexOf(c) === -1,
   );
-  if (missing.length) return report(`MISSING COLUMNS: ${missing.join(', ')}`);
+  if (missing.length) return report_(`MISSING COLUMNS: ${missing.join(', ')}`);
 
   const iFirst = header.indexOf('first_name');
   const iEmail = header.indexOf('email');
@@ -392,7 +392,7 @@ function preflight() {
   const alreadyLogged = log ? Math.max(0, log.getLastRow() - 1) : 0;
   const quota = MailApp.getRemainingDailyQuota();
 
-  return report(
+  return report_(
     `TAB: ${SHEET_NAME}\n` +
       `ROWS: ${rows}\n` +
       `COLUMNS: ${header.join(', ')}\n` +
