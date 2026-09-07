@@ -7,7 +7,8 @@
 //   node scripts/build-rejection-page.mjs drafts.json [out.html]
 //
 // The `DONE` set is for recipients who already have a saved Gmail draft, so
-// the page can mark them and nobody gets two rejection emails.
+// the page can mark them and nobody gets two rejection emails. All 46 are in
+// Drafts now, so every row is marked: this page is a standby, not the plan.
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const [, , jsonPath, outPath = 'rejections-send.html'] = process.argv;
@@ -23,6 +24,43 @@ const DONE = new Set([
   'bobby.xiao@mail.utoronto.ca',
   'belindatang423@outlook.com',
   'yunwoo.chung@mail.utoronto.ca',
+  'rihard.vartic@gmail.com',
+  'meixuan.lou@mail.utoronto.ca',
+  'onyx.chavanond@mail.utoronto.ca',
+  'yixuanchen.1011@gmail.com',
+  'justin10651@hotmail.com',
+  'ayaan.adrito@gmail.com',
+  'jakemaly07@gmail.com',
+  'gargdeepankar0202@gmail.com',
+  'samarvir.garg@mail.utoronto.ca',
+  'jk.tang@mail.utoronto.ca',
+  'mo.xia@mail.utoronto.ca',
+  'via.liu@mail.utoronto.ca',
+  'whara918@gmail.com',
+  'rastin.abbaspour@gmail.com',
+  'ryan.wu51299@gmail.com',
+  'kimiaj277@gmail.com',
+  'elliott.haggie@mail.utoronto.ca',
+  'golam.eram@mail.utoronto.ca',
+  'rocky.shi@mail.utoronto.ca',
+  'audit_wpvrec@uwaterloo.ca',
+  'andre_hoe@yahoo.ca',
+  'welcent18@gmail.com',
+  'zhao2899@icloud.com',
+  'mmax.nguyen@mail.utoronto.ca',
+  'mustafa.ahmed080525@gmail.com',
+  'danieldanieldanieldaniel.zhang@mail.utoronto.ca',
+  '1shuhan200702@gmail.com',
+  'jaylensze@gmail.com',
+  'jeremyniu0520@gmail.com',
+  'ke@uwaterloo.ca',
+  'ronan.li@mail.utoronto.ca',
+  'j234tan@uwaterloo.ca',
+  'tonylin102007@gmail.com',
+  'joshuajing.zhang@mail.utoronto.ca',
+  'asadullahqureshi362@gmail.com',
+  'abehl@uwaterloo.ca',
+  'amandalei2007@gmail.com',
 ]);
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
