@@ -1,0 +1,22 @@
+Subject: You're IN! RSVP for Battle of the Schools!
+
+Hi {{first_name}},
+
+Good news: you're off the waitlist and into Battle of the Schools 2026, September 12 and 13, at the Bahen Centre, University of Toronto.
+
+Confirm your spot here. This link is yours, so please don't forward it:
+{{status_url}}
+
+It takes about a minute. You'll tell us whether you're coming, give us an emergency contact and any dietary restrictions, and accept the participant waiver (utwat.ca/waiver). Once you're done, that same link becomes your ticket: a QR code you show at the door. Screenshot it or bookmark it.
+
+RSVP by Wednesday, September 10 at 11:59 p.m. Eastern. After that we release your spot.
+
+Two things worth knowing:
+
+- The event is 18+. If you'll be under 18 on September 12, reply to this email instead of RSVPing and we'll sort it out.
+- If you can't make it, say so at the link anyway. It takes ten seconds and it helps us get the headcount right.
+
+Questions: utwat.bots@gmail.com
+
+Thanks,
+The Battle of the Schools team
