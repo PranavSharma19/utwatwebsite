@@ -1,0 +1,13 @@
+Subject: Your Battle of the Schools 2026 application
+
+Hi {{first_name}},
+
+Thanks for applying to Battle of the Schools 2026. We've finished reviewing applications, and I'm sorry to say we can't offer you a spot this year.
+
+We had far more strong applications than we have seats at the Bahen Centre, so a lot of people we'd have liked to host didn't make it in. That's a room-size problem, not a verdict on you or your work.
+
+We'll be running this again, and we'd genuinely be glad to see your name come through next time.
+
+Thanks for taking the time to apply,
+The Battle of the Schools team
+utwat.bots@gmail.com
