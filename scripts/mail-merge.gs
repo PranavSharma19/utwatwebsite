@@ -358,7 +358,7 @@ function report_(message) {
  * ever reached the sheet -- shape of the link, no blanks, no duplicates --
  * and names the row numbers of anything wrong.
  */
-function preflight() {
+function preflight_() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
