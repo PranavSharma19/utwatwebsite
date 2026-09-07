@@ -82,7 +82,7 @@ const REPLY_TO = 'utwat.bots@gmail.com';
  * 100/day on a consumer account, 1500 on Workspace) and the script refuses to
  * start if the remaining quota is below the number of rows left to send.
  */
-const MAX_PER_RUN = 25;
+const MAX_PER_RUN = 23;
 
 // --------------------------------------------------------------- templates
 
