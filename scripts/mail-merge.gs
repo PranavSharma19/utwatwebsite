@@ -64,7 +64,7 @@ const SPREADSHEET_ID = '1xYoIIbJ9kn4lBFjinJLOHRUb7IL6vya05MesCFpcgmM';
 const SHEET_NAME = 'bots-admitted-mail-merge-3';
 
 /** 'draft' writes Gmail drafts and sends nothing. 'send' sends for real. */
-const MODE = 'draft';
+const MODE = 'send';
 
 /** Which letter to send. See TEMPLATES below. */
 const TEMPLATE = 'admitted';
@@ -89,7 +89,7 @@ const MAX_PER_RUN = 25;
 const TEMPLATES = {
   admitted: {
     subject:
-      "You're IN! RSVP for BOTS!",
+      "You're IN! RSVP for Battle of the Schools!",
     body: `Hi {{first_name}},
 
 You've been admitted to Battle of the Schools 2026, September 12 and 13, at the Bahen Centre, University of Toronto.
