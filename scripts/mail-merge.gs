@@ -283,17 +283,28 @@ function sendMerge() {
     );
   }
 
+  // Checked against THIS run's batch, not everyone still pending. The guard
+  // exists to stop a batch dying half-sent; once MAX_PER_RUN splits the roster
+  // deliberately across several runs, comparing to the full remainder refuses
+  // runs that would have completed cleanly. It cost a batch on the night this
+  // was found: 74 quota, 75 pending, 25 to send, and it refused.
+  const batch = pending.slice(0, MAX_PER_RUN);
   const quota = MailApp.getRemainingDailyQuota();
-  if (MODE === 'send' && quota < pending.length) {
+  if (MODE === 'send' && quota < batch.length) {
     throw new Error(
-      `${pending.length} to send but only ${quota} left in today's Gmail quota. ` +
-        'Sending part of a decision batch splits people across two days, and the ' +
-        'RSVP deadline does not move. Wait for the reset, or send from an ' +
-        'account with a bigger quota.',
+      `${batch.length} in this batch but only ${quota} left in today's Gmail ` +
+        'quota. A batch that dies half-sent leaves people wondering, and the ' +
+        'RSVP deadline does not move. Lower MAX_PER_RUN to at most ' +
+        `${quota}, wait for the quota reset, or send the rest by hand.`,
     );
   }
-
-  const batch = pending.slice(0, MAX_PER_RUN);
+  if (MODE === 'send' && quota < pending.length) {
+    report_(
+      `NOTE: ${pending.length} still pending but only ${quota} quota left ` +
+        `today. This batch of ${batch.length} will send; ` +
+        `${pending.length - quota} will not fit before the reset.`,
+    );
+  }
   let done = 0;
 
   batch.forEach((p) => {
