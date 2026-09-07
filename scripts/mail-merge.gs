@@ -89,12 +89,12 @@ const MAX_PER_RUN = 25;
 const TEMPLATES = {
   admitted: {
     subject:
-      "You're in — Battle of the Schools, Sept 12–13. RSVP by Wed the 10th.",
+      "You're IN! RSVP for BOTS!",
     body: `Hi {{first_name}},
 
-You've been admitted to Battle of the Schools 2026, September 12–13 at the Bahen Centre, University of Toronto.
+You've been admitted to Battle of the Schools 2026, September 12 and 13, at the Bahen Centre, University of Toronto.
 
-Confirm your spot here. This link is yours — please don't forward it:
+Confirm your spot here. This link is yours, so please don't forward it:
 {{status_url}}
 
 It takes about a minute. You'll tell us whether you're coming, give us an emergency contact and any dietary restrictions, and accept the participant waiver (utwat.ca/waiver). Once you're done, that same link becomes your ticket: a QR code you show at the door. Screenshot it or bookmark it.
@@ -108,16 +108,17 @@ Two things worth knowing:
 
 Questions: utwat.bots@gmail.com
 
-— the Battle of the Schools team`,
+Thanks,
+The Battle of the Schools team`,
   },
 
   waitlisted: {
-    subject: "Battle of the Schools — you're on the waitlist",
+    subject: "Battle of the Schools: you're on the waitlist",
     body: `Hi {{first_name}},
 
 You're on the waitlist for Battle of the Schools 2026. We had more strong applications than seats, and yours was one we genuinely didn't want to turn down.
 
-Here's how it actually works. Admitted applicants have until Wednesday, September 10 to confirm. Every one who declines or doesn't answer frees a seat, and we work down the waitlist in order as that happens — so most movement will be on the 10th and 11th, and some of it could be the day before the event.
+Here's how it actually works. Admitted applicants have until Wednesday, September 10 to confirm. Every one who declines or doesn't answer frees a seat, and we work down the waitlist in order as that happens, so most movement will be on the 10th and 11th, and some of it could be the day before the event.
 
 If a seat opens for you we'll email you at this address, and you'll have 24 hours to confirm. It's worth keeping an eye on your inbox through Friday the 11th.
 
@@ -126,11 +127,12 @@ You can check where you stand any time:
 
 We know waiting is the worst answer to get. Thanks for applying.
 
-— the Battle of the Schools team`,
+Thanks,
+The Battle of the Schools team`,
   },
 
   rejected: {
-    subject: 'Battle of the Schools 2026 — our decision',
+    subject: 'Battle of the Schools 2026: our decision',
     body: `Hi {{first_name}},
 
 We aren't able to offer you a spot at Battle of the Schools 2026. We had far more applications than the venue holds, and a lot of good ones didn't make it through.
@@ -139,7 +141,8 @@ This isn't a judgement on you as a builder, and it doesn't affect any future eve
 
 Thanks for the time you put into applying.
 
-— the Battle of the Schools team`,
+Thanks,
+The Battle of the Schools team`,
   },
 
   // For anyone admitted AFTER the global RSVP deadline. rsvp.ts gives them
@@ -148,10 +151,10 @@ Thanks for the time you put into applying.
   // has already passed; sendMerge() refuses that combination outright.
   promotion: {
     subject:
-      'A spot opened up — Battle of the Schools, confirm within 24 hours',
+      'A spot opened up. Confirm within 24 hours, Battle of the Schools',
     body: `Hi {{first_name}},
 
-A spot has opened up and it's yours if you want it. Battle of the Schools 2026, September 12–13 at the Bahen Centre, U of T.
+A spot has opened up and it's yours if you want it. Battle of the Schools 2026, September 12 and 13, at the Bahen Centre, U of T.
 
 Because we're close to the event, this one is time-boxed: you have 24 hours from right now to confirm, then the link stops accepting answers and we offer the seat to the next person.
 
@@ -159,15 +162,16 @@ Because we're close to the event, this one is time-boxed: you have 24 hours from
 
 You'll answer yes or no, give us an emergency contact and any dietary restrictions, and accept the participant waiver (utwat.ca/waiver). Then that link becomes your QR ticket for the door.
 
-If you can't make it, telling us no is genuinely useful — it lets us reach the next person tonight rather than tomorrow.
+If you can't make it, telling us no is genuinely useful. It lets us reach the next person tonight rather than tomorrow.
 
 Questions, or the 24 hours won't work for you: utwat.bots@gmail.com
 
-— the Battle of the Schools team`,
+Thanks,
+The Battle of the Schools team`,
   },
 
   reminder: {
-    subject: 'Last day to RSVP — Battle of the Schools closes tonight at 11:59',
+    subject: 'Last day to RSVP. Battle of the Schools closes tonight at 11:59',
     body: `Hi {{first_name}},
 
 Your spot at Battle of the Schools is still unconfirmed, and RSVPs close tonight, Wednesday September 10, at 11:59 p.m. Eastern.
@@ -179,7 +183,8 @@ If you can't make it, tell us that at the same link. A decline right now gets so
 
 After tonight the link stops accepting answers and we release the seat.
 
-— the Battle of the Schools team`,
+Thanks,
+The Battle of the Schools team`,
   },
 };
 
