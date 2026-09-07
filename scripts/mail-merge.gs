@@ -52,6 +52,14 @@
  *   The log is also crash recovery: it is appended and flushed after every
  *   single send, so a run that dies at row 60 -- quota, a network blip, a
  *   closed tab -- is resumed by running it again.
+ *
+ *   The log only knows about sends THIS SCRIPT made. Anything sent by hand
+ *   from Gmail -- a bounce chased down, the last few when the quota ran out
+ *   -- leaves no row, so the next run counts those people as unmailed and
+ *   writes to them a second time. After a manual send, append a row for it:
+ *   timestamp, template, email, status_url, and a note in a fifth column if
+ *   you want the record to say it was done by hand. Only columns two and
+ *   three are read, so the note cannot affect the dedupe.
  */
 
 // ---------------------------------------------------------------- settings
