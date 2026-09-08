@@ -49,3 +49,7 @@ waitlist-send.html
 # Same reason as waitlist-send.html: 46 real applicant addresses, generated
 # for one send. Not source.
 rejections-send.html
+
+# Exclusion list for the second admitted batch: real applicant addresses,
+# confirmed sent by searching Gmail. Same reason as the other two.
+scripts/admitted-batch2-exclude.txt
