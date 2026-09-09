@@ -20,7 +20,7 @@
 // A stale value here does not merely disagree with the UI. This module backs
 // the only writer there is, so it rejects every submission outright -- which
 // is exactly what happened when a July deadline outlived a July event.
-export const DEADLINE = '2026-09-08T23:59:00-04:00'
+export const DEADLINE = '2026-09-09T23:59:00-04:00'
 
 export const ALLOWED_SCHOOLS = [
   'University of Toronto St. George',
