@@ -20,7 +20,7 @@ export const portalConfig = {
   hackerGuideUrl: '',
   eventStartIso: '2026-09-12',
   eventEndIso: '2026-09-13',
-  applicationDeadlineIso: '2026-09-08T23:59:00-04:00',
+  applicationDeadlineIso: '2026-09-09T23:59:00-04:00',
   // RSVP window for admitted applicants. Enforced by the rsvp action in
   // supabase/functions/submit-application/rsvp.ts, whose RSVP_DEADLINE is
   // pinned to this value by portalConfig.test.js. Anyone admitted after this
