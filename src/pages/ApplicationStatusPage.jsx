@@ -197,26 +197,29 @@ export default function ApplicationStatusPage() {
             <>
               <TicketCard application={application} statusUrl={statusUrl} />
 
-              {/* One Anthropic signup code per attendee. The claim is gated by
-                  this same token; /claim/:token hands out exactly one and shows
-                  the same one on every revisit. See src/pages/ClaimPage.jsx. */}
-              <Link
-                to={`/claim/${token}`}
-                className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-5 transition hover:bg-primary/10"
-              >
-                <span className="flex items-center gap-3">
-                  <Sparkles className="shrink-0 text-primary" size={20} />
-                  <span>
-                    <span className="block font-display text-sm font-black uppercase tracking-wide text-white">
-                      Claim your Claude credits
-                    </span>
-                    <span className="mt-0.5 block text-xs text-on-surface-variant">
-                      One Anthropic signup code, yours as an attendee.
+              {/* One Anthropic signup code per attendee, offered only once
+                  they're checked in -- the pool matches the checked-in count,
+                  and /claim enforces the same gate. It hands out exactly one and
+                  shows the same one on every revisit. See ClaimPage.jsx. */}
+              {view === 'checked-in' && (
+                <Link
+                  to={`/claim/${token}`}
+                  className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-5 transition hover:bg-primary/10"
+                >
+                  <span className="flex items-center gap-3">
+                    <Sparkles className="shrink-0 text-primary" size={20} />
+                    <span>
+                      <span className="block font-display text-sm font-black uppercase tracking-wide text-white">
+                        Claim your Claude credits
+                      </span>
+                      <span className="mt-0.5 block text-xs text-on-surface-variant">
+                        One Anthropic signup code, yours now that you&apos;re here.
+                      </span>
                     </span>
                   </span>
-                </span>
-                <ArrowRight className="shrink-0 text-primary" size={18} />
-              </Link>
+                  <ArrowRight className="shrink-0 text-primary" size={18} />
+                </Link>
+              )}
 
               <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
                 <div>

@@ -154,6 +154,26 @@ export default function ClaimPage() {
         </div>
       )}
 
+      {!loading && !error && outcome === 'not_checked_in' && (
+        <div className="glass-panel rounded-3xl border border-secondary-fixed/20 bg-secondary-fixed/5 p-8">
+          <div className="flex items-start gap-4">
+            <HelpCircle className="mt-1 shrink-0 text-secondary-fixed" size={24} />
+            <div>
+              <h2 className="font-display text-2xl font-black uppercase text-white">
+                Check in first
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                Codes go to attendees who are here. Check in at the front desk,
+                then reload this page and your code will be waiting.
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                Trouble checking in? Find an organizer, or email {mailto}.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!loading && !error && outcome === 'exhausted' && (
         <div className="glass-panel rounded-3xl border border-secondary-fixed/20 bg-secondary-fixed/5 p-8">
           <h2 className="font-display text-2xl font-black uppercase text-white">
