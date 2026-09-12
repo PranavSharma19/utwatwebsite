@@ -53,3 +53,12 @@ rejections-send.html
 # Exclusion list for the second admitted batch: real applicant addresses,
 # confirmed sent by searching Gmail. Same reason as the other two.
 scripts/admitted-batch2-exclude.txt
+scripts/admitted-batch3-sent.txt
+scripts/admitted-batch4-sent.txt
+scripts/essentials-send-2026-09-10.txt
+scripts/reject-submitted-2026-09-11.txt
+scripts/reject-send-160-2026-09-11.txt
+
+# One-time signup-code pool loader: carries the CODE_LOAD_SECRET and reads the
+# codes CSV at runtime. Not source.
+scripts/load-signup-codes.mjs

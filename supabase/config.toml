@@ -35,3 +35,13 @@ verify_jwt = true
 # supabase/migrations/202608260003_anonymous_applications.sql -- so this
 # function is the entire applicant write surface.
 verify_jwt = false
+
+[functions.claim-key]
+# Claiming a signup code involves no sign-in: the applicant's status_token (the
+# same bearer credential that gates RSVP) is the whole proof, so as with
+# submit-application there is no JWT and the gateway default would 401 every
+# claim before the function ran. The guard is inside: a per-IP flood limit, a
+# strict token shape, and claim_signup_code() refusing anyone not admitted AND
+# attending. The browser holds no grant on public.event_signup_codes, so this
+# function is the entire read/write surface for the code pool.
+verify_jwt = false

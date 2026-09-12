@@ -5,6 +5,7 @@ import AdmissionsAdminPage from './pages/AdmissionsAdminPage';
 import AdmissionsPage from './pages/AdmissionsPage';
 import ApplicationStatusPage from './pages/ApplicationStatusPage';
 import CheckInPage from './pages/CheckInPage';
+import ClaimPage from './pages/ClaimPage';
 import LandingPage from './pages/LandingPage';
 import LegalPage from './pages/LegalPage';
 import {
@@ -27,6 +28,9 @@ export default function App() {
               and email cannot be relied on to reach applicants at either
               school. See src/pages/ApplicationStatusPage.jsx. */}
           <Route path="/apply/status/:token" element={<ApplicationStatusPage />} />
+          {/* Signup-code claim. Same token-is-the-credential model as the
+              status page: see src/pages/ClaimPage.jsx. */}
+          <Route path="/claim/:token" element={<ClaimPage />} />
           <Route
             path={portalConfig.adminPath}
             element={<AdmissionsAdminPage />}

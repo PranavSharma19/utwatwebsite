@@ -246,3 +246,25 @@ export function checkInByToken(statusToken) {
 export function checkInByEmail(email) {
   return callAdminFunction({ action: 'checkin_by_email', email });
 }
+
+// --- Signup-code claim -----------------------------------------------------
+//
+// One Anthropic signup code per attending applicant, claimed by the same
+// status_token that gates RSVP. Resolves to `{ outcome, signup_link }` where
+// outcome is one of claimed | already_claimed | not_attending | not_found |
+// exhausted. Like check-in, these are outcomes rather than errors: the endpoint
+// answers 200 for all of them and the page renders each. `signup_link` is set
+// only for claimed / already_claimed.
+export async function claimSignupCode(statusToken) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke('claim-key', {
+    method: 'POST',
+    body: { action: 'claim', statusToken },
+  });
+
+  if (error) {
+    throw await toFunctionError(error);
+  }
+
+  return data;
+}
